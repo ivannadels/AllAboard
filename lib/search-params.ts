@@ -61,7 +61,7 @@ export function parseSearchParams(raw: RawParams): Partial<SearchQuery> & Search
   };
 }
 
-/** Build a /search URL. Omits defaults to keep links short. */
+/** Build a search URL (search lives on `/`). Omits defaults to keep links short. */
 export function searchHref(q: Partial<SearchQuery> & Partial<SearchTarget>): string {
   const p = new URLSearchParams();
   if (q.originId) p.set("from", q.originId);
@@ -76,5 +76,5 @@ export function searchHref(q: Partial<SearchQuery> & Partial<SearchTarget>): str
   if (q.legId) p.set("leg", q.legId);
   if (q.tripId) p.set("trip", q.tripId);
   const qs = p.toString();
-  return qs ? `/search?${qs}` : "/search";
+  return qs ? `/?${qs}` : "/";
 }

@@ -34,13 +34,17 @@ No env vars needed. Optional: `DATABASE_URL` (default `file:./prisma/dev.db`) an
 - `lib/pricing.ts`: deterministic mock price engine (demand curve, monotonic train fares, journey = sum of segments, forecast)
 - `lib/trip-summary.ts`: totals, CO2, "flight you didn't take"
 - `lib/sim-clock.ts`: the demo's "now". Time logic never uses `Date.now()`.
-- `app/search`: search page; `app/trips/[id]`: trip page; `app/actions.ts`: server actions
+- `app/page.tsx`: search; `app/trips/page.tsx`: trips; `app/trips/[id]/page.tsx`: trip board; `app/actions.ts`: server actions
 
 ## Pages
 
-- `/`: trips
-- `/search?from=&to=&date=&travelers=&sort=&modes=&maxChanges=&after=&before=`: search. Add `leg=<id>` to save results straight to a leg, or `trip=<id>` to preselect a trip.
-- `/trips/[id]?plan=<variantId>`: legs with their options, select / remove, "Find options"
+The UI follows the pin-board templates (allaboard-templates): 2px ink outlines, hard shadows, lime highlights, Bricolage Grotesque + Inter (self-hosted via `@fontsource`, so it works offline). Tokens live in `app/globals.css`; shared pieces in `components/aa/`.
+
+- `/`: search. `?from=&to=&date=&travelers=&sort=&modes=&maxChanges=&after=&before=`; add `leg=<id>` to save results straight to a leg, or `trip=<id>` to preselect a trip. (`/search` redirects here.)
+- `/trips`: your trips, with Drafts / Booked / Past tabs and NEW TRIP.
+- `/trips/[id]?plan=<variantId>`: the trip board: week calendar, selected journeys (price strips, swap to a cheaper like-for-like option, options expander, book), CO₂ vs flying, things to do, checklist, bike share, budget. "Customize board" hides widgets (saved in the browser); "+" duplicates the plan.
+
+Board data: `lib/board.ts` (pure layout/suggestion logic, tested), `lib/board-view.ts` (view models), `data/fixtures/attractions.json`, `data/fixtures/bikeshare.json` behind `lib/bikeshare.ts` (GBFS in Step 2). Collaborators and Share are template previews until accounts arrive (Step 3).
 
 ## Conventions
 

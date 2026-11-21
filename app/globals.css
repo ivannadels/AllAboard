@@ -4,24 +4,42 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * AllAboard pin-board design (from the allaboard-templates handoff).
+ * Fonts are self-hosted via @fontsource (imported in app/layout.tsx) so the app works
+ * offline; the template's Google Fonts import is intentionally not used.
+ */
+
 @theme inline {
+  /* Pin-board palette */
+  --color-ink: var(--aa-ink);
+  --color-green: var(--aa-green);
+  --color-forest: var(--aa-forest);
+  --color-lime: var(--aa-lime);
+  --color-lime-soft: var(--aa-lime-soft);
+  --color-mint: var(--aa-mint);
+  --color-sage: var(--aa-sage);
+  --color-paper: var(--aa-paper);
+  --color-dots: var(--aa-dots);
+  --color-line: var(--aa-line);
+  --color-sub: var(--aa-sub);
+  --color-sub-2: var(--aa-sub-2);
+  --color-warn: var(--aa-warn);
+  --color-warn-bg: var(--aa-warn-bg);
+  --color-flight: var(--aa-flight);
+
+  --font-sans: "Inter Variable", Inter, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", system-ui, sans-serif;
+
+  --shadow-hard: 5px 5px 0 var(--aa-ink);
+  --shadow-hard-lg: 6px 6px 0 var(--aa-ink);
+  --shadow-hard-sm: 3px 3px 0 var(--aa-ink);
+  --shadow-hard-xs: 2px 2px 0 var(--aa-ink);
+  --shadow-hard-green: 3px 3px 0 var(--aa-green);
+
+  /* shadcn tokens, mapped onto the same palette so dialogs/menus match */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -38,8 +56,6 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --color-eco: var(--eco);
-  --color-eco-soft: var(--eco-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -50,76 +66,42 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.48 0.12 158);
-  --primary-foreground: oklch(0.985 0 0);
-  --eco: oklch(0.55 0.14 152);
-  --eco-soft: oklch(0.96 0.04 155);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  /* Design tokens from the templates (app/allaboard.css). */
+  --aa-ink: #0e1f17; /* text, 2px outlines, hard shadows */
+  --aa-green: #17794a; /* primary green */
+  --aa-forest: #0f3b2a; /* dark green */
+  --aa-lime: #c8f169; /* highlight / primary buttons */
+  --aa-lime-soft: #e4f7b5;
+  --aa-mint: #eaf3ec; /* page dots background, soft tiles */
+  --aa-sage: #cfe6d6; /* stays, soft badges */
+  --aa-paper: #f5faf6; /* strip backgrounds */
+  --aa-dots: #c3d9c9; /* dot-grid colour */
+  --aa-line: #d5e3d9; /* hairlines */
+  --aa-sub: #3e5248; /* secondary text */
+  --aa-sub-2: #4b5f55; /* tertiary text */
+  --aa-warn: #b4470f; /* price went up */
+  --aa-warn-bg: #fdebdd;
+  --aa-flight: #f2a97e; /* the flight you didn't take */
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.72 0.14 158);
-  --primary-foreground: oklch(0.18 0.03 158);
-  --eco: oklch(0.75 0.15 152);
-  --eco-soft: oklch(0.3 0.05 155);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --radius: 0.75rem;
+  --background: #ffffff;
+  --foreground: var(--aa-ink);
+  --card: #ffffff;
+  --card-foreground: var(--aa-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--aa-ink);
+  --primary: var(--aa-green);
+  --primary-foreground: #ffffff;
+  --secondary: var(--aa-mint);
+  --secondary-foreground: var(--aa-ink);
+  --muted: var(--aa-mint);
+  --muted-foreground: var(--aa-sub);
+  --accent: var(--aa-mint);
+  --accent-foreground: var(--aa-ink);
+  --destructive: var(--aa-warn);
+  --border: var(--aa-ink);
+  --input: var(--aa-ink);
+  --ring: var(--aa-green);
 }
 
 @layer base {
@@ -127,6 +109,91 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-ink;
+    margin: 0;
   }
+}
+
+/* The pin-board dot grid. */
+@utility dot-grid {
+  background-color: var(--aa-mint);
+  background-image: radial-gradient(var(--aa-dots) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+
+/* Display type: Bricolage Grotesque, heavy. */
+@utility font-display-heavy {
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+/* Template controls: 2px ink outline, heavy labels. */
+@utility field {
+  min-height: 44px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 2px solid var(--aa-ink);
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #fff;
+  color: var(--aa-ink);
+  font: 600 15px var(--font-sans);
+}
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 2px solid var(--aa-ink);
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+@utility btn-lime {
+  background: var(--aa-lime);
+  color: var(--aa-ink);
+  &:hover {
+    color: var(--aa-ink);
+  }
+}
+
+@utility btn-ink {
+  background: var(--aa-ink);
+  color: #fff;
+  &:hover {
+    color: #fff;
+  }
+}
+
+@utility btn-white {
+  background: #fff;
+  color: var(--aa-ink);
+  &:hover {
+    color: var(--aa-ink);
+    background: var(--aa-mint);
+  }
+}
+
+@utility btn-green {
+  background: var(--aa-green);
+  color: #fff;
+  &:hover {
+    color: #fff;
+  }
+}
+
+@utility pin-dialog {
+  border: 2px solid var(--aa-ink);
+  border-radius: 18px;
+  box-shadow: 6px 6px 0 var(--aa-ink);
 }

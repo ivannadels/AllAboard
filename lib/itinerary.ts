@@ -170,3 +170,169 @@ export async function removeOption(optionId: string) {
     }
   });
 }
+
+// ---------------------------------------------------------------------------
+// Board widgets: agenda, attractions, checklist, plans, booking, new trips
+// ---------------------------------------------------------------------------
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export interface AgendaInput {
+  variantId: string;
+  date: string; // YYYY-MM-DD
+  time?: string | null;
+  endTime?: string | null;
+  kind: "STAY" | "ACTIVITY" | "NOTE";
+  title: string;
+  location?: string | null;
+  costCents?: number | null;
+  attractionId?: string | null;
+}
+
+export async function addAgendaItem(input: AgendaInput) {
+  const title = input.title.trim();
+  if (!title) throw new ItineraryError("Give it a name");
+  if (title.length > 120) throw new ItineraryError("That name is too long");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new ItineraryError("Pick a date");
+  for (const t of [input.time, input.endTime]) if (t && !HHMM.test(t)) throw new ItineraryError("Times look like 14:30");
+  if (input.time && input.endTime && input.endTime <= input.time) throw new ItineraryError("End time must be after the start");
+  const variant = await prisma.variant.findUnique({ where: { id: input.variantId } });
+  if (!variant) throw new ItineraryError("Plan not found");
+  return prisma.agendaItem.create({
+    data: {
+      variantId: input.variantId,
+      date: new Date(`${input.date}T00:00:00.000Z`),
+      time: input.time || null,
+      endTime: input.time ? input.endTime || null : null,
+      kind: input.kind,
+      title,
+      location: input.location?.trim() || null,
+      costCents: input.costCents ?? null,
+      attractionId: input.attractionId ?? null,
+    },
+  });
+}
+
+/** Delete agenda items; returns them so the UI can offer "Restore". */
+export async function removeAgendaItems(ids: string[]) {
+  const items = await prisma.agendaItem.findMany({ where: { id: { in: ids } } });
+  await prisma.agendaItem.deleteMany({ where: { id: { in: ids } } });
+  return items;
+}
+
+/** Re-create previously removed items (same ids, so references stay valid). */
+export async function restoreAgendaItems(items: { id: string; variantId: string; date: Date; time: string | null; endTime: string | null; kind: "STAY" | "ACTIVITY" | "NOTE"; title: string; location: string | null; costCents: number | null; attractionId: string | null }[]) {
+  const existing = new Set((await prisma.agendaItem.findMany({ where: { id: { in: items.map((i) => i.id) } }, select: { id: true } })).map((i) => i.id));
+  const toCreate = items.filter((i) => !existing.has(i.id));
+  if (toCreate.length) await prisma.agendaItem.createMany({ data: toCreate });
+  return toCreate.length;
+}
+
+export async function addChecklistItem(tripId: string, text: string) {
+  const clean = text.trim();
+  if (!clean) throw new ItineraryError("Write something first");
+  if (clean.length > 200) throw new ItineraryError("That item is too long");
+  const last = await prisma.checklistItem.findFirst({ where: { tripId }, orderBy: { sortOrder: "desc" } });
+  return prisma.checklistItem.create({ data: { tripId, text: clean, sortOrder: (last?.sortOrder ?? -1) + 1 } });
+}
+
+export async function setChecklistItemDone(id: string, done: boolean) {
+  return prisma.checklistItem.update({ where: { id }, data: { done } });
+}
+
+export async function removeChecklistItem(id: string) {
+  await prisma.checklistItem.delete({ where: { id } });
+}
+
+/** A copy of `obj` without `keys` (for cloning rows without their ids). */
+function omit<T extends object, K extends keyof T>(obj: T, keys: readonly K[]): Omit<T, K> {
+  const copy = { ...obj };
+  for (const k of keys) delete copy[k];
+  return copy;
+}
+
+/** Copy a plan: legs, options (with segments and price history), alerts and agenda. */
+export async function duplicateVariant(variantId: string) {
+  return prisma.$transaction(async (tx) => {
+    const v = await tx.variant.findUnique({
+      where: { id: variantId },
+      include: {
+        agenda: true,
+        legs: { include: { options: { include: { segments: true, snapshots: true, alerts: true } } } },
+      },
+    });
+    if (!v) throw new ItineraryError("Plan not found");
+    const count = await tx.variant.count({ where: { tripId: v.tripId } });
+    const letter = String.fromCharCode(65 + count); // Plan C, D…
+    const copy = await tx.variant.create({ data: { tripId: v.tripId, name: `Plan ${letter}`, sortOrder: count } });
+
+    for (const leg of v.legs) {
+      const newLeg = await tx.leg.create({
+        data: {
+          variantId: copy.id,
+          sortOrder: leg.sortOrder,
+          originStationId: leg.originStationId,
+          destStationId: leg.destStationId,
+          date: leg.date,
+          notes: leg.notes,
+        },
+      });
+      for (const o of leg.options) {
+        const fields = omit(o, ["id", "legId", "segments", "snapshots", "alerts"]);
+        // Bookings belong to the original plan; the copy starts as a draft.
+        const status = fields.status === "BOOKED" ? "SELECTED" : fields.status;
+        await tx.option.create({
+          data: {
+            ...fields,
+            status,
+            legId: newLeg.id,
+            segments: { create: o.segments.map((s) => omit(s, ["id", "optionId"])) },
+            snapshots: { create: o.snapshots.map((s) => omit(s, ["id", "optionId"])) },
+            alerts: { create: o.alerts.map((a) => omit(a, ["id", "optionId"])) },
+          },
+        });
+      }
+    }
+    if (v.agenda.length) {
+      await tx.agendaItem.createMany({ data: v.agenda.map((a) => ({ ...omit(a, ["id", "variantId"]), variantId: copy.id })) });
+    }
+    return copy;
+  });
+}
+
+/** Mark options as booked. Only a leg's chosen (SELECTED) option can be booked. */
+export async function markBooked(optionIds: string[]) {
+  const res = await prisma.option.updateMany({ where: { id: { in: optionIds }, status: "SELECTED" }, data: { status: "BOOKED" } });
+  return res.count;
+}
+
+export interface NewTripInput {
+  name: string;
+  startDate: string;
+  endDate: string;
+  travelers: number;
+  budgetCents: number | null;
+}
+
+export async function createTrip(input: NewTripInput) {
+  const name = input.name.trim();
+  if (!name) throw new ItineraryError("Give your trip a name");
+  if (name.length > 80) throw new ItineraryError("That name is too long");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(input.endDate)) {
+    throw new ItineraryError("Pick start and end dates");
+  }
+  if (input.endDate < input.startDate) throw new ItineraryError("The trip can't end before it starts");
+  if (!Number.isInteger(input.travelers) || input.travelers < 1 || input.travelers > 9) {
+    throw new ItineraryError("Travelers must be between 1 and 9");
+  }
+  return prisma.trip.create({
+    data: {
+      name,
+      startDate: new Date(`${input.startDate}T00:00:00.000Z`),
+      endDate: new Date(`${input.endDate}T00:00:00.000Z`),
+      travelers: input.travelers,
+      budgetCents: input.budgetCents,
+      variants: { create: { name: "Plan A", sortOrder: 0 } },
+    },
+  });
+}

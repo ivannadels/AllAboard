@@ -1,12 +1,10 @@
 "use client";
 
-import { Check, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { addJourneyToLeg, addJourneyToPlan, type ActionResult } from "@/app/actions";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +19,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatDay } from "@/lib/format";
 import type { TripPicker } from "@/lib/queries";
 import { normalize } from "@/lib/text";
+import { cn } from "@/lib/utils";
+
+const PIN_CLASS =
+  "inline-flex min-h-[46px] min-w-[136px] items-center justify-center rounded-xl border-2 border-ink px-4 font-display-heavy text-[15px] cursor-pointer disabled:cursor-default";
 
 interface JourneyRef {
   externalId: string;
@@ -51,16 +53,14 @@ export function SaveToLegButton({ journey, legId }: { journey: JourneyRef; legId
   const [pending, startTransition] = useTransition();
   const { saved, handle } = useSaveResult();
   return (
-    <Button
-      size="sm"
-      className="w-full gap-1.5"
-      variant={saved ? "secondary" : "default"}
+    <button
+      type="button"
       disabled={pending || saved}
       onClick={() => startTransition(async () => handle(await addJourneyToLeg({ externalId: journey.externalId, legId })))}
+      className={cn(PIN_CLASS, saved ? "bg-ink text-white disabled:opacity-100" : "bg-lime text-ink")}
     >
-      {saved ? <Check className="size-4" /> : <Plus className="size-4" />}
-      {saved ? "Saved to leg" : pending ? "Saving…" : "Save to leg"}
-    </Button>
+      {saved ? "Saved ✓" : pending ? "Saving…" : "+ Save to leg"}
+    </button>
   );
 }
 
@@ -94,23 +94,22 @@ export function AddToTripDialog({
 
   if (trips.length === 0) {
     return (
-      <Button size="sm" variant="outline" className="w-full" asChild>
-        <Link href="/">Create a trip first</Link>
-      </Button>
+      <Link href="/trips" className={cn(PIN_CLASS, "bg-white text-ink no-underline")}>
+        Create a trip first
+      </Link>
     );
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="w-full gap-1.5" variant={saved ? "secondary" : "default"}>
-          {saved ? <Check className="size-4" /> : <Plus className="size-4" />}
-          {saved ? "Added" : "Add to trip"}
-        </Button>
+        <button type="button" className={cn(PIN_CLASS, saved ? "bg-ink text-white" : "bg-lime text-ink")}>
+          {saved ? "Pinned ✓" : "+ Pin to trip"}
+        </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="pin-dialog sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add to a trip</DialogTitle>
+          <DialogTitle className="font-display-heavy text-2xl uppercase">Pin to a trip</DialogTitle>
           <DialogDescription>
             {journey.originCity} → {journey.destCity}, {formatDay(journey.departAt)}
           </DialogDescription>
@@ -172,10 +171,12 @@ export function AddToTripDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <button type="button" className="btn btn-white" onClick={() => setOpen(false)}>
             Cancel
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
+            className="btn btn-lime shadow-hard-sm"
             disabled={!variant || pending || tooFewSeats}
             onClick={() =>
               variant &&
@@ -186,8 +187,8 @@ export function AddToTripDialog({
               })
             }
           >
-            {pending ? "Adding…" : matchingLeg ? "Add option" : "Create leg"}
-          </Button>
+            {pending ? "Pinning…" : matchingLeg ? "Pin as an option" : "Create leg"}
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

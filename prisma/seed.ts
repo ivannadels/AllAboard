@@ -27,6 +27,7 @@ interface LegSpec {
 interface AgendaSpec {
   date: string;
   time?: string;
+  endTime?: string;
   kind: "STAY" | "ACTIVITY" | "NOTE";
   title: string;
   location?: string;
@@ -47,6 +48,7 @@ interface TripSpec {
   travelers: number;
   budgetCents: number | null;
   variants: VariantSpec[];
+  checklist?: { text: string; done?: boolean }[];
   /** Segment key → a fare-bucket jump that happened `daysAgo` (shows as a recent rise). */
   bumps?: Record<string, { pct: number; daysAgo: number }>;
 }
@@ -57,21 +59,28 @@ interface TripSpec {
 
 const springAgenda: AgendaSpec[] = [
   { date: "2027-04-15", kind: "STAY", title: "Canal-side guesthouse, 3 nights", location: "Jordaan, Amsterdam", costCents: eur(480) },
-  { date: "2027-04-16", time: "10:00", kind: "ACTIVITY", title: "Rijksmuseum", location: "Museumplein, Amsterdam", costCents: eur(3 * 22.5) },
-  { date: "2027-04-17", time: "14:00", kind: "ACTIVITY", title: "Bike tour along the Amstel", location: "Amsterdam", costCents: eur(3 * 30) },
+  { date: "2027-04-16", time: "10:00", endTime: "13:00", kind: "ACTIVITY", title: "Rijksmuseum", location: "Museumplein, Amsterdam", costCents: eur(3 * 22.5) },
+  { date: "2027-04-17", time: "14:00", endTime: "16:30", kind: "ACTIVITY", title: "Bike tour along the Amstel", location: "Amsterdam", costCents: eur(3 * 30) },
   { date: "2027-04-18", kind: "STAY", title: "Apartment, 4 nights", location: "Kreuzberg, Berlin", costCents: eur(560) },
-  { date: "2027-04-19", time: "11:00", kind: "ACTIVITY", title: "Museum Island", location: "Mitte, Berlin", costCents: eur(3 * 24) },
-  { date: "2027-04-20", time: "16:00", kind: "ACTIVITY", title: "Picnic on Tempelhofer Feld", location: "Berlin" },
-  { date: "2027-04-22", time: "20:00", kind: "NOTE", title: "Back home. Dinner at the canal Saint-Martin?", location: "Paris" },
+  { date: "2027-04-19", time: "11:00", endTime: "14:00", kind: "ACTIVITY", title: "Museum Island", location: "Mitte, Berlin", costCents: eur(3 * 24) },
+  { date: "2027-04-20", time: "16:00", endTime: "18:30", kind: "ACTIVITY", title: "Picnic on Tempelhofer Feld", location: "Berlin" },
+  { date: "2027-04-22", time: "20:00", endTime: "21:30", kind: "NOTE", title: "Dinner by the canal Saint-Martin?", location: "Paris" },
 ];
 
 const springLoop: TripSpec = {
   id: "trip-spring-loop",
-  name: "Spring loop: Paris → Amsterdam → Berlin → Paris",
+  name: "Spring loop",
   startDate: "2027-04-15",
   endDate: "2027-04-22",
   travelers: 3,
   budgetCents: eur(2400), // transport + stays + activities for 3
+  checklist: [
+    { text: "Book Eurostar Paris → Amsterdam" },
+    { text: "Reserve bike spot on the Berlin train" },
+    { text: "Buy Museumkaart for Amsterdam" },
+    { text: "Book apartment in Kreuzberg", done: true },
+    { text: "Pack plug adapter + bike lock" },
+  ],
   bumps: { "paris-nord>amsterdam-centraal@1013:eurostar": { pct: 14, daysAgo: 2 } },
   variants: [
     {
@@ -106,13 +115,14 @@ const barcelona: TripSpec = {
   endDate: "2027-05-24",
   travelers: 2,
   budgetCents: eur(750),
+  checklist: [{ text: "Book Sagrada Família tickets" }, { text: "Plan the way back" }],
   variants: [
     {
       name: "Plan A",
       legs: [{ from: "paris-lyon", to: "barcelona-sants", date: "2027-05-20", select: "paris-lyon>barcelona-sants@0707:sncf" }],
       agenda: [
         { date: "2027-05-20", kind: "STAY", title: "Hostal, 4 nights", location: "Gràcia, Barcelona", costCents: eur(360) },
-        { date: "2027-05-21", time: "10:00", kind: "ACTIVITY", title: "Sagrada Família", location: "Barcelona", costCents: eur(2 * 26) },
+        { date: "2027-05-21", time: "10:00", endTime: "12:00", kind: "ACTIVITY", title: "Sagrada Família", location: "Barcelona", costCents: eur(2 * 26) },
         { date: "2027-05-24", kind: "NOTE", title: "Return leg still to plan (via Montpellier?)" },
       ],
     },
@@ -193,11 +203,17 @@ async function createTrip(spec: TripSpec) {
         variantId: variant.id,
         date: day(a.date),
         time: a.time ?? null,
+        endTime: a.endTime ?? null,
         kind: a.kind,
         title: a.title,
         location: a.location ?? null,
         costCents: a.costCents ?? null,
       })),
+    });
+  }
+  if (spec.checklist?.length) {
+    await prisma.checklistItem.createMany({
+      data: spec.checklist.map((c, i) => ({ tripId: spec.id, text: c.text, done: c.done ?? false, sortOrder: i })),
     });
   }
   console.log(`  ✓ ${spec.name}: ${spec.variants.length} variant(s), ${optionCount} options`);
@@ -208,6 +224,7 @@ async function main() {
 
   // Wipe in dependency order.
   await prisma.$transaction([
+    prisma.checklistItem.deleteMany(),
     prisma.notification.deleteMany(),
     prisma.alert.deleteMany(),
     prisma.priceSnapshot.deleteMany(),

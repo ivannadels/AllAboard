@@ -59,7 +59,8 @@ model Trip {
   budgetCents Int?
   createdAt   DateTime @default(now())
 
-  variants Variant[]
+  variants  Variant[]
+  checklist ChecklistItem[]
 }
 
 model Variant {
@@ -186,18 +187,35 @@ model Notification {
 }
 
 model AgendaItem {
-  id        String     @id @default(cuid())
-  variantId String
-  date      DateTime
-  time      String? // "HH:mm", optional
-  kind      AgendaKind
-  title     String
-  location  String?
-  costCents Int?
+  id           String     @id @default(cuid())
+  variantId    String
+  date         DateTime
+  time         String? // "HH:mm", optional
+  endTime      String? // "HH:mm", optional; shown as a block on the week calendar
+  kind         AgendaKind
+  title        String
+  location     String?
+  costCents    Int?
+  // Set when added from "Things to do" (data/fixtures/attractions.json id).
+  attractionId String?
 
   variant Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   @@index([variantId, date])
+}
+
+// The board's "To do" note: a per-trip checklist.
+model ChecklistItem {
+  id        String   @id @default(cuid())
+  tripId    String
+  text      String
+  done      Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, sortOrder])
 }
 
 // Singleton (id = 1). The demo's notion of "now". Advance it from /demo.

@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   cacheComponents: false,
   // better-sqlite3 is a native module; keep it out of the server bundle.
   serverExternalPackages: ["better-sqlite3"],
+  // Search moved to `/` with the pin-board redesign; the query string carries over.
+  async redirects() {
+    return [{ source: "/search", destination: "/", permanent: false }];
+  },
   turbopack: {
     rules: {
       "*.css": {

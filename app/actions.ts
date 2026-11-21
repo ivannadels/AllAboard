@@ -2,12 +2,32 @@
 
 import { refresh } from "next/cache";
 import { prisma } from "@/lib/db";
-import { ItineraryError, findOrCreateLeg, removeOption, saveDraftToLeg, selectOption } from "@/lib/itinerary";
+import { getAttraction } from "@/lib/attractions";
+import { attractionSlot, cityStops, isoDay } from "@/lib/board";
+import {
+  ItineraryError,
+  addAgendaItem,
+  addChecklistItem,
+  createTrip,
+  duplicateVariant,
+  findOrCreateLeg,
+  markBooked,
+  removeAgendaItems,
+  removeChecklistItem,
+  removeOption,
+  restoreAgendaItems,
+  saveDraftToLeg,
+  selectOption,
+  setChecklistItemDone,
+  type AgendaInput,
+  type NewTripInput,
+} from "@/lib/itinerary";
+import { normalize } from "@/lib/text";
 import { getProvider } from "@/lib/providers";
 import { getSimNow } from "@/lib/sim-clock";
 
 export type ActionResult =
-  | { ok: true; message: string; tripId: string; legCreated?: boolean; alreadySaved?: boolean }
+  | { ok: true; message: string; tripId?: string; legCreated?: boolean; alreadySaved?: boolean }
   | { ok: false; error: string };
 
 const fail = (err: unknown): ActionResult => ({
@@ -100,6 +120,107 @@ export async function removeOptionAction(optionId: string): Promise<ActionResult
     await removeOption(optionId);
     refresh();
     return { ok: true, tripId: option.leg.variant.tripId, message: "Removed" };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Board widgets
+// ---------------------------------------------------------------------------
+
+/** Run a mutation, refresh the page, and map errors to a friendly message. */
+async function run(message: string, fn: () => Promise<unknown>): Promise<ActionResult> {
+  try {
+    await fn();
+    refresh();
+    return { ok: true, message };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function addAgendaAction(input: AgendaInput) {
+  return run("Added to your week", () => addAgendaItem(input));
+}
+
+export type RemovedAgendaItem = Awaited<ReturnType<typeof removeAgendaItems>>[number];
+
+export async function removeAgendaAction(ids: string[]): Promise<ActionResult & { removed?: RemovedAgendaItem[] }> {
+  try {
+    const removed = await removeAgendaItems(ids);
+    refresh();
+    return { ok: true, message: "Removed", removed };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function restoreAgendaAction(items: RemovedAgendaItem[]) {
+  return run("Restored", () => restoreAgendaItems(items));
+}
+
+/** Add a "Things to do" suggestion to a plan at its suggested slot. Idempotent. */
+export async function addAttractionAction(input: { variantId: string; attractionId: string }) {
+  return run("Added to your week", async () => {
+    const attraction = getAttraction(input.attractionId);
+    if (!attraction) throw new ItineraryError("Unknown suggestion");
+    const variant = await prisma.variant.findUnique({
+      where: { id: input.variantId },
+      include: { trip: true, agenda: true, legs: { include: { origin: true, dest: true, options: { include: { segments: { include: { origin: true, dest: true } } } } } } },
+    });
+    if (!variant) throw new ItineraryError("Plan not found");
+    if (variant.agenda.some((a) => a.attractionId === attraction.id)) return;
+    const stop = cityStops(variant.legs, variant.trip.endDate).find((s) => normalize(s.city) === attraction.city);
+    if (!stop) throw new ItineraryError("This plan doesn't stop in that city");
+    const slot = attractionSlot(attraction, stop);
+    await addAgendaItem({
+      variantId: variant.id,
+      date: isoDay(slot.date),
+      time: slot.time,
+      endTime: slot.endTime,
+      kind: "ACTIVITY",
+      title: attraction.name,
+      location: stop.city,
+      attractionId: attraction.id,
+    });
+  });
+}
+
+export async function addChecklistAction(tripId: string, text: string) {
+  return run("Added", () => addChecklistItem(tripId, text));
+}
+
+export async function toggleChecklistAction(id: string, done: boolean) {
+  return run(done ? "Done" : "Reopened", () => setChecklistItemDone(id, done));
+}
+
+export async function removeChecklistAction(id: string) {
+  return run("Removed", () => removeChecklistItem(id));
+}
+
+export async function duplicatePlanAction(variantId: string): Promise<ActionResult & { variantId?: string }> {
+  try {
+    const copy = await duplicateVariant(variantId);
+    refresh();
+    return { ok: true, message: `${copy.name} created`, tripId: copy.tripId, variantId: copy.id };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function bookAction(optionIds: string[]) {
+  return run("Marked as booked", async () => {
+    const n = await markBooked(optionIds);
+    if (n === 0) throw new ItineraryError("Nothing to book. Select an option first.");
+  });
+}
+
+export async function createTripAction(input: NewTripInput): Promise<ActionResult> {
+  try {
+    const trip = await createTrip(input);
+    refresh();
+    return { ok: true, message: "Trip created", tripId: trip.id };
   } catch (err) {
     return fail(err);
   }

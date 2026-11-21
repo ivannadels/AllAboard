@@ -1,3 +1,4 @@
+import { tripStatus } from "./board";
 import { flightCounterfactualGrams } from "./co2";
 import { prisma } from "./db";
 import { isoDay } from "./itinerary";
@@ -9,7 +10,7 @@ import { summarizeVariant } from "./trip-summary";
 const HISTORY_POINTS = 22;
 
 /** Trips list: each trip with a summary of its first variant (Plan A). */
-export async function getTripsOverview() {
+export async function getTripsOverview(simNow: Date) {
   const trips = await prisma.trip.findMany({
     orderBy: { startDate: "asc" },
     include: {
@@ -44,6 +45,7 @@ export async function getTripsOverview() {
       route: primary ? [primary.legs[0]?.origin.city, ...primary.legs.map((l) => l.dest.city)].filter(Boolean) : [],
       legModes: primary?.legs.map((l) => l.options[0]?.mode ?? null) ?? [],
       summary: primary ? summarizeVariant(primary, trip.travelers) : null,
+      status: tripStatus(trip, primary?.legs ?? [], simNow),
     };
   });
 }
@@ -90,6 +92,7 @@ export async function getTripBoard(tripId: string, simNow: Date) {
   const trip = await prisma.trip.findUnique({
     where: { id: tripId },
     include: {
+      checklist: { orderBy: { sortOrder: "asc" } },
       variants: {
         orderBy: { sortOrder: "asc" },
         include: {

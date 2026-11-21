@@ -1,0 +1,24 @@
+{
+  "_comment": "Mock 'Things to do' per city (keyed by lowercase city). `day` is the preferred day within the stay (0 = arrival day, clamped to the stay), `time` the suggested start. Adding one creates an agenda item.",
+  "attractions": [
+    { "id": "ams-anne-frank", "city": "amsterdam", "name": "Anne Frank House", "blurb": "Timed tickets · bike 8 min from stay", "tag": "Museum", "day": 1, "time": "10:00", "durationMin": 90 },
+    { "id": "ams-albert-cuyp", "city": "amsterdam", "name": "Albert Cuyp Market", "blurb": "Street food · walk 5 min", "tag": "Food", "day": 1, "time": "12:00", "durationMin": 60 },
+    { "id": "ams-adam-lookout", "city": "amsterdam", "name": "A'DAM Lookout", "blurb": "City views at sunset · free ferry", "tag": "Views", "day": 1, "time": "17:00", "durationMin": 60 },
+    { "id": "ams-foodhallen", "city": "amsterdam", "name": "Foodhallen", "blurb": "Indoor food hall · bike 10 min", "tag": "Food", "day": 2, "time": "19:00", "durationMin": 90 },
+    { "id": "ams-ndsm", "city": "amsterdam", "name": "NDSM wharf by ferry", "blurb": "Street art and flea market · free ferry", "tag": "Outdoors", "day": 2, "time": "11:00", "durationMin": 120 },
+
+    { "id": "ber-reichstag", "city": "berlin", "name": "Reichstag dome", "blurb": "Free, book ahead · bike 15 min", "tag": "Landmark", "day": 2, "time": "09:00", "durationMin": 60 },
+    { "id": "ber-mauerpark", "city": "berlin", "name": "Mauerpark flea market", "blurb": "Weekend market · U-Bahn", "tag": "Market", "day": 3, "time": "14:00", "durationMin": 120 },
+    { "id": "ber-badeschiff", "city": "berlin", "name": "Badeschiff on the Spree", "blurb": "Riverside drinks · walk 10 min", "tag": "Outdoors", "day": 1, "time": "18:00", "durationMin": 90 },
+    { "id": "ber-markthalle", "city": "berlin", "name": "Markthalle Neun", "blurb": "Food hall in Kreuzberg · walk 6 min", "tag": "Food", "day": 0, "time": "19:00", "durationMin": 90 },
+    { "id": "ber-east-side", "city": "berlin", "name": "East Side Gallery", "blurb": "Open-air murals on the Wall · bike 12 min", "tag": "Landmark", "day": 2, "time": "11:00", "durationMin": 90 },
+
+    { "id": "bcn-boqueria", "city": "barcelona", "name": "La Boqueria", "blurb": "Market hall on La Rambla · metro 10 min", "tag": "Food", "day": 1, "time": "12:30", "durationMin": 60 },
+    { "id": "bcn-park-guell", "city": "barcelona", "name": "Park Güell", "blurb": "Timed tickets · bus 20 min", "tag": "Outdoors", "day": 2, "time": "09:30", "durationMin": 120 },
+    { "id": "bcn-barceloneta", "city": "barcelona", "name": "Barceloneta beach", "blurb": "Swim or stroll · bike 15 min", "tag": "Outdoors", "day": 2, "time": "16:00", "durationMin": 120 },
+    { "id": "bcn-bunkers", "city": "barcelona", "name": "Bunkers del Carmel", "blurb": "Sunset views over the city · walk + bus", "tag": "Views", "day": 1, "time": "19:00", "durationMin": 60 },
+
+    { "id": "par-orsay", "city": "paris", "name": "Musée d'Orsay", "blurb": "Impressionists by the Seine · metro 15 min", "tag": "Museum", "day": 0, "time": "10:00", "durationMin": 150 },
+    { "id": "par-canal", "city": "paris", "name": "Canal Saint-Martin walk", "blurb": "Bridges and cafés · walk from Gare de l'Est", "tag": "Outdoors", "day": 0, "time": "17:00", "durationMin": 90 }
+  ]
+}

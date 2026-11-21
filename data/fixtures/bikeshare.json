@@ -1,0 +1,30 @@
+{
+  "_comment": "Mock bike-share docks near stations, keyed by station id. `bikes` is a typical count; the mock varies it by sim day. Step 2 replaces this with live GBFS feeds behind lib/bikeshare.ts.",
+  "stations": {
+    "amsterdam-centraal": [
+      { "operator": "OV-fiets", "initials": "OV", "bg": "#0E1F17", "fg": "#C8F169", "location": "Centraal · IJ side", "walkMin": 2, "bikes": 14 },
+      { "operator": "Donkey Republic", "initials": "DR", "bg": "#CFE6D6", "fg": "#0E1F17", "location": "Centraal · city side", "walkMin": 3, "bikes": 6 },
+      { "operator": "OV-fiets", "initials": "OV", "bg": "#0E1F17", "fg": "#C8F169", "location": "Prins Hendrikkade", "walkMin": 5, "bikes": 9 }
+    ],
+    "berlin-hbf": [
+      { "operator": "nextbike", "initials": "NB", "bg": "#D6DEEE", "fg": "#0E1F17", "location": "Hbf · Europaplatz", "walkMin": 2, "bikes": 9 },
+      { "operator": "Call a Bike", "initials": "CB", "bg": "#F3E2B3", "fg": "#0E1F17", "location": "Hbf · Washingtonplatz", "walkMin": 3, "bikes": 4 },
+      { "operator": "Lime", "initials": "LI", "bg": "#E4F7B5", "fg": "#0E1F17", "location": "Invalidenstraße", "walkMin": 6, "bikes": 11 }
+    ],
+    "paris-est": [
+      { "operator": "Vélib' Métropole", "initials": "VL", "bg": "#BFD9E8", "fg": "#0E1F17", "location": "Rue d'Alsace", "walkMin": 2, "bikes": 12 },
+      { "operator": "Vélib' Métropole", "initials": "VL", "bg": "#BFD9E8", "fg": "#0E1F17", "location": "Boulevard de Strasbourg", "walkMin": 4, "bikes": 7 }
+    ],
+    "paris-nord": [
+      { "operator": "Vélib' Métropole", "initials": "VL", "bg": "#BFD9E8", "fg": "#0E1F17", "location": "Rue de Dunkerque", "walkMin": 2, "bikes": 10 },
+      { "operator": "Lime", "initials": "LI", "bg": "#E4F7B5", "fg": "#0E1F17", "location": "Place Napoléon III", "walkMin": 3, "bikes": 8 }
+    ],
+    "paris-lyon": [
+      { "operator": "Vélib' Métropole", "initials": "VL", "bg": "#BFD9E8", "fg": "#0E1F17", "location": "Rue de Lyon", "walkMin": 3, "bikes": 15 }
+    ],
+    "barcelona-sants": [
+      { "operator": "Bicing", "initials": "BI", "bg": "#FDEBDD", "fg": "#0E1F17", "location": "Plaça dels Països Catalans", "walkMin": 2, "bikes": 8 },
+      { "operator": "Donkey Republic", "initials": "DR", "bg": "#CFE6D6", "fg": "#0E1F17", "location": "Carrer de Numància", "walkMin": 5, "bikes": 5 }
+    ]
+  }
+}

@@ -43,7 +43,7 @@ export function PriceSparkline({
       <AreaChart width={width} height={height} data={data} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
         <YAxis hide domain={[min - pad, max + pad]} />
         <Tooltip
-          cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
+          cursor={{ stroke: "var(--aa-line)", strokeWidth: 1 }}
           isAnimationActive={false}
           allowEscapeViewBox={{ x: true, y: true }}
           content={SparkTooltip}
@@ -51,17 +51,17 @@ export function PriceSparkline({
         <Area
           type="linear"
           dataKey="priceCents"
-          stroke="var(--muted-foreground)"
+          stroke="var(--aa-sub)"
           strokeWidth={2}
           strokeLinejoin="round"
           strokeLinecap="round"
-          fill="var(--muted-foreground)"
+          fill="var(--aa-sub)"
           fillOpacity={0.1}
           isAnimationActive={false}
-          activeDot={{ r: 4, fill: "var(--eco)", stroke: "var(--card)", strokeWidth: 2 }}
+          activeDot={{ r: 4, fill: "var(--aa-green)", stroke: "#fff", strokeWidth: 2 }}
           dot={(props: { cx?: number; cy?: number; index?: number }) =>
             props.index === last && props.cx != null && props.cy != null ? (
-              <circle key="end" cx={props.cx} cy={props.cy} r={4} fill="var(--eco)" stroke="var(--card)" strokeWidth={2} />
+              <circle key="end" cx={props.cx} cy={props.cy} r={4} fill="var(--aa-green)" stroke="#fff" strokeWidth={2} />
             ) : (
               <g key={props.index} />
             )
@@ -76,7 +76,7 @@ function SparkTooltip({ active, payload }: TooltipContentProps<ValueType, NameTy
   const point = payload?.[0]?.payload as Point | undefined;
   if (!active || !point) return null;
   return (
-    <div className="rounded-md border bg-popover px-2 py-1 text-xs shadow-sm">
+    <div className="rounded-md border-2 border-ink bg-white px-2 py-1 text-xs">
       <div className="font-semibold tabular-nums text-popover-foreground">{formatMoney(point.priceCents)}</div>
       <div className="text-muted-foreground">{formatDay(point.date)}</div>
     </div>
