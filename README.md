@@ -1,71 +1,103 @@
 # AllAboard
 
-A sustainable-travel trip draft board: plan a multi-leg itinerary by **train, bus and car share** before buying, compare plans, watch prices, and see the CO2 you save compared with flying. We never sell flights.
+AllAboard aims to reduce emissions from energy consumption by making more sustainable travel choices easier, more visible, and more appealing. Unlike conventional travel platforms that often present flights alongside trains and buses, or prioritise air travel based on price and convenience, AllAboard is a **train- and bus-first trip planning and booking platform**. It allows users to plan and book journeys exclusively using lower-emission alternatives to flying.
 
-Step 1 runs fully **offline on mock data**. Real routing (Transitous) and bike share (GBFS) plug in behind `lib/providers` in Step 2.
+By placing rail and bus travel at the centre of the travel planning experience, AllAboard encourages users to reconsider flying as their default option for European travel. To support this, the platform displays estimated CO₂ emissions for the equivalent flight of each journey, allowing users to factor environmental impact into their decision-making rather than considering price and travel time alone.
 
-## Getting started
+AllAboard also incorporates bike-sharing information into its trip planning board, encouraging sustainable mobility for the first and last mile of a journey. Emissions estimates are updated as itineraries are planned or modified, helping users understand the environmental impact of their travel choices.
+
+Beyond reducing emissions directly, AllAboard aims to encourage a longer-term shift in travel habits and attitudes towards more sustainable ways of exploring Europe, making lower-emission travel a more accessible and natural choice.
+
+---
+
+## What the prototype does
+
+- **Search** trains, coaches and car shares across 29 European stations, with connections (up to 2 changes). Results are ranked **greenest first**, and every option shows its CO₂e next to the price and against the flight it replaces. Flights are never sold.
+- **Plan on a trip board**: a week calendar of your journeys, stays and activities; the journeys you've chosen with price trends and cheaper like-for-like swaps; "things to do" per city; bike share at each arrival station; a checklist; budget; and the flight you didn't take. Widgets can be dragged around and hidden.
+- **Compare plans** of the same trip (e.g. Plan A by train, Plan B by bus and car share), each with its own totals and emissions.
+- **Book and pay** for all legs in one checkout (Stripe, test mode).
+
+## Where the data comes from
+
+| Data | Source today | Real or mock? |
+| --- | --- | --- |
+| Stations (29, in FR, BE, NL, DE, ES, IT, CH) | `data/fixtures/stations.json` | **Real** names and coordinates |
+| Timetables and routes | A hand-built network of ~40 rail and bus links (`data/fixtures/network.json`); our own route finder builds journeys from it | **Mock**: realistic but invented departure times |
+| Fares and price history | Our own pricing formula (`lib/pricing.ts`) | **Mock** |
+| Seats left | Fixture values or generated | **Mock** |
+| CO₂e emissions | Published factors: UK DESNZ 2026, Ember 2025 grid data, rail energy studies (see below) | **Real methodology**, estimated per journey |
+| Bike share at stations | `data/fixtures/bikeshare.json`, varied by day | **Mock** counts, real operator names |
+| Things to do | `data/fixtures/attractions.json` | Real places, **mock** descriptions and walking times |
+| Payments | Stripe Checkout, test mode | **Real Stripe API** (test cards only) |
+| "Now" | A simulated clock fixed at 1 March 2027 | Demo setting |
+
+Everything except Stripe runs offline. Journeys, bike share and payments sit behind small interfaces (`TransportProvider`, `BikeShareProvider`, `lib/payments`), so live sources can replace the mocks without touching the UI.
+
+## How we calculate
+
+### Emissions (CO₂e per traveller)
+
+We estimate **CO₂-equivalent, well-to-wheel**: the fuel or electricity a journey uses, including producing it (the scope ISO 14083 asks for). Building vehicles and infrastructure is not included. A journey's total is the sum of its segments.
+
+| Mode | Method | Example |
+| --- | --- | --- |
+| **Train** | Electricity per passenger-km × the carbon intensity of the country's grid. High-speed trains (averaging 125+ km/h) use ~54 Wh per passenger-km, intercity trains ~80 Wh. Cross-border trains use the average of both countries' grids. | Paris → Amsterdam (Eurostar): **8 g/km**. Amsterdam → Berlin (intercity): **23.5 g/km** |
+| **Coach** | 46 g per passenger-km (DESNZ 2026) | Paris → Amsterdam: 23 kg |
+| **Car share** | 210 g per car-km (DESNZ 2026 average car), divided by the driver plus your group, counting at least 3 people | 3 travellers + driver: **52.5 g/km** each |
+| **Flight you didn't take** | Straight-line distance + 8% for real flight paths, at 148 g per passenger-km (DESNZ short-haul economy), **including** the extra warming from contrails and other effects at altitude (97 g counting CO₂ only) | Paris → Amsterdam: **68.6 kg** per person |
+
+Grid carbon intensity (Ember, 2025, g CO₂e per kWh): Switzerland 39 · France 41 · Luxembourg 111 · Austria 117 · Belgium 151 · Spain 154 · UK 218 · Netherlands 254 · Italy 285 · Germany 334 · other countries use the EU average of 211. This is why the same train emits several times more in Germany than in France.
+
+For the demo "Spring loop" (Paris → Amsterdam → Berlin → Paris, 3 travellers), the train plan emits **90 kg** against **901 kg** for flying (−90%), and the bus and car-share plan emits **319 kg** (−65%).
+
+Sources: [UK DESNZ GHG conversion factors 2026](https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2026) · [Ember yearly electricity data](https://ember-energy.org/data/yearly-electricity-data/) · train energy use from the Green Train programme (46–62 Wh/passenger-km, high-speed) and [KTH](https://www.kth.se/polopoly_fs/1.179879.1600688474!/Menu/general/column-content/attachment/Energy_060925_full_pdf.pdf) (~80 Wh/passenger-km, long-distance). All factors live in [`lib/co2-factors.ts`](lib/co2-factors.ts), and the app explains them in a "How we calculate" dialog.
+
+Known simplifications: a cross-border train counts half its distance on each country's grid; whether a train is high-speed is inferred from its average speed; the car-share minimum of 3 people is our assumption; real emissions depend on the actual train, occupancy and route.
+
+### Routes
+
+The route finder searches the timetable for journeys between any stations in the origin and destination cities, with up to 2 changes. Changes need at least 15 minutes at the same station, or 60 minutes to cross a city between stations. Every hop has to get closer to the destination, car shares are only offered as direct trips, and journeys that another option beats on time, changes, price and emissions are dropped.
+
+### Prices (mock)
+
+Until real fares are connected, prices come from a formula: distance × a rate per mode (train €0.12/km, coach €0.06, car share €0.07), adjusted by operator. Prices rise as departure approaches: flat beyond 60 days out, then steeper inside 14 days. Train fares never go down, like real rail fare buckets; bus and car-share fares can dip. The same journey always gets the same price on the same day, so demos are reproducible. Each result shows 21 days of price history and a forecast such as "Book soon: fares typically rise 10% over the next 2 weeks".
+
+### Payments
+
+One checkout covers every leg: each fare × travellers, plus a **€1.50 AllAboard booking fee per leg per traveller**. Prices are recalculated on the server when you pay, and if they changed you see the new total before anything is charged. After payment the legs are marked booked, and the app records what each operator is owed. Those fares are settled with operators outside Stripe for now.
+
+## What still needs integrating
+
+1. **Live journeys and timetables.** Replace the mock network with [Transitous](https://transitous.org) (an open European journey planner) behind `TransportProvider`. It returns schedules but no prices, so our pricing formula would keep running on real distances. The demo clock (2027) must move to real dates first, because real timetables only exist a few months ahead.
+2. **Real fares and ticket issuing.** Prices are mock, and "booked" is only a status in AllAboard. Real tickets need operator or distribution APIs (e.g. Distribusion, Trainline Partner Solutions, or operators directly), plus refunds and cancellations.
+3. **Live bike share.** Replace the fixture with open GBFS feeds (e.g. Vélib' in Paris, Bicing in Barcelona, nextbike and Donkey Republic). OV-fiets and Lime don't publish open feeds.
+4. **Price alerts.** An alert is created for every saved journey, but nothing checks prices yet. Still to build: the price recheck, the notification bell, and a demo panel to fast-forward the clock or force a price rise.
+5. **Plan comparison page.** Side-by-side Plan A / Plan B view with totals, time, emissions and number of changes.
+6. **Things to do from real data.** Suggestions come from a small fixture; a points-of-interest source (e.g. OpenStreetMap or Wikidata) would cover every city.
+7. **Accounts and sharing.** The collaborator avatars and Share button are previews; a single demo user is built in.
+8. **Emissions refinements.** Split cross-border trains by the actual distance in each country, use train types from the journey data instead of inferring them from speed, and use real occupancy where operators publish it.
+9. **Payments before going live.** Stripe Tax is currently **off** in checkout, so the booking dialog, return page and this file's mentions of VAT need updating, or Tax switched back on. Optional Stripe Connect payouts to operators are built but not enabled. The tax treatment of fares and fees needs a tax adviser. See [`STRIPE_INTEGRATION_TODO.md`](STRIPE_INTEGRATION_TODO.md).
+
+## Run it locally
+
+Requires Node.js 22+.
 
 ```bash
-npm i                      # also generates the Prisma client
-npx prisma migrate dev     # creates prisma/dev.db (SQLite)
-npm run seed               # demo trips, price history, alerts
-npm run dev                # http://localhost:3000
+npm i                      # install (also generates the database client)
+npx prisma migrate dev     # create the local SQLite database
+npm run seed               # load the demo trips
+npm run dev                # open http://localhost:3000
 ```
 
-No env vars needed. Optional: `DATABASE_URL` (default `file:./prisma/dev.db`) and `PROVIDER` (default `mock`).
+No configuration is needed: without Stripe keys, checkout uses a clearly labelled mock. To use Stripe test mode, put `STRIPE_SECRET_KEY=sk_test_…` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_…` in `.env.local` (git-ignored) and pay with card `4242 4242 4242 4242`. Full Stripe setup, including webhooks and the optional sandbox script, is in [`STRIPE_INTEGRATION_TODO.md`](STRIPE_INTEGRATION_TODO.md).
 
-| Script | What it does |
+| Command | What it does |
 | --- | --- |
-| `npm run seed` | Wipe and reseed the demo data (deterministic) |
-| `npm run db:reset` | Drop the DB, re-apply migrations, reseed |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Vitest unit tests |
+| `npm run seed` | Reset the demo data (always the same result) |
+| `npm test` | Unit tests (emissions, pricing, routing, board, payments) |
+| `npm run typecheck` | TypeScript checks |
+| `npm run stripe:setup` | Optional Stripe sandbox setup |
 
-## Layout
+## Where things live
 
-- `prisma/`: schema, migrations, seed (the seed goes through the same search + save code as the app)
-- `data/fixtures/stations.json`, `network.json`: mock stations and a timetabled rail/bus network (no prices; those come from `lib/pricing.ts`)
-- `lib/providers/`: `TransportProvider` interface, `getProvider()` factory, and `MockProvider`, whose route finder builds journeys with up to 2 changes (15 min same-station / 60 min cross-city transfers, car shares direct only)
-- `lib/search.ts`, `lib/search-params.ts`: filters, enrichment (21-day history, 7-day trend, forecast, vs-flying), badges; URL ⇄ query
-- `lib/ranking.ts`: Greenest (default) / Cheapest / Fastest + badges
-- `lib/itinerary.ts`: save a journey to a leg (segments, price history, PRICE_UP alert), match or create legs, select / remove
-- `lib/co2.ts`, `lib/co2-factors.ts`: emissions in CO₂e per traveller, well-to-wheel (ISO 14083 scope; no manufacturing or infrastructure). Trains = electricity per passenger-km (54 Wh high-speed / 80 Wh intercity, by average speed) × the country's grid intensity (Ember 2025; cross-border = average of both). Coach and car from UK DESNZ 2026 factors; car shares split between the driver and your group (at least 3 people). The "flight you didn't take" = great circle + 8% at DESNZ short-haul economy, including non-CO₂ effects. Sources are listed in `lib/co2-factors.ts` and in the app's "How we calculate" dialog.
-- `lib/pricing.ts`: deterministic mock price engine (demand curve, monotonic train fares, journey = sum of segments, forecast)
-- `lib/trip-summary.ts`: totals, CO2, "flight you didn't take"
-- `lib/sim-clock.ts`: the demo's "now". Time logic never uses `Date.now()`.
-- `app/page.tsx`: search; `app/trips/page.tsx`: trips; `app/trips/[id]/page.tsx`: trip board; `app/actions.ts`: server actions
-
-## Pages
-
-The UI follows the pin-board templates (allaboard-templates): 2px ink outlines, hard shadows, lime highlights, Bricolage Grotesque + Inter (self-hosted via `@fontsource`, so it works offline). Tokens live in `app/globals.css`; shared pieces in `components/aa/`.
-
-- `/`: search. `?from=&to=&date=&travelers=&sort=&modes=&maxChanges=&after=&before=`; add `leg=<id>` to save results straight to a leg, or `trip=<id>` to preselect a trip. (`/search` redirects here.)
-- `/trips`: your trips, with Drafts / Booked / Past tabs and NEW TRIP.
-- `/trips/[id]?plan=<variantId>`: the trip board: week calendar, selected journeys (price strips, swap to a cheaper like-for-like option, options expander, book), CO₂ vs flying, things to do, checklist, bike share, budget. Widgets are modular: drag any widget by its ⠿ handle (mouse, touch, or keyboard: Space, arrows, Space) within or between the wide and narrow columns. "Customize board" hides widgets and resets the layout. The arrangement is saved on the trip (`Trip.boardLayout`, see `lib/board-layout.ts`). "+" duplicates the plan.
-
-Board data: `lib/board.ts` (pure layout/suggestion logic, tested), `lib/board-view.ts` (view models), `data/fixtures/attractions.json`, `data/fixtures/bikeshare.json` behind `lib/bikeshare.ts` (GBFS in Step 2). Collaborators and Share are template previews until accounts arrive (Step 3).
-
-## Payments (Stripe, test mode)
-
-Booking runs through **Stripe Checkout in test mode** when `STRIPE_SECRET_KEY` is set, and through a clearly labelled **mock checkout** when it isn't (so `npm run dev` still works offline). Live keys are refused.
-
-**Model:** AllAboard is the booking agent. One Checkout covers every leg (fare × travellers per line, plus a €1.50 booking fee per leg per traveller). Each booking records what every operator is owed; by default AllAboard **settles with operators outside Stripe**. Optionally, **Stripe Connect** can pay them automatically (*separate charges and transfers*, one transfer per operator, `transfer_group` = booking id). **Stripe Tax** calculates VAT on the booking fee only (`txcd_20030000`); fares pass through as nontaxable (`txcd_00000000`) because the operator's VAT is already in the fare. Have a tax adviser confirm this before going live.
-
-**Setup**
-
-1. Put test keys in `.env.local` (git-ignored): `STRIPE_SECRET_KEY=sk_test_…` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_…`.
-2. `npm run stripe:setup`: configures Stripe Tax (placeholder Brussels head office, prices include VAT, Belgian registration) and creates one test connected account per operator. Safe to re-run.
-   - Connect payouts are **optional**. To enable them, first set up Connect in the sandbox Dashboard so the **platform is responsible for connected accounts' losses** (accounts with no Stripe Dashboard). Without it, fares are settled with operators outside Stripe.
-3. Webhooks (optional; the return page also confirms payments): `stripe listen --print-secret` and put the value in `.env.local` as `STRIPE_WEBHOOK_SECRET`, then run `npm run stripe:listen` next to `npm run dev`. The CLI needs `STRIPE_API_KEY` set (or `stripe login`).
-4. Pay with test card `4242 4242 4242 4242`, any future expiry, any CVC.
-
-Code: `lib/payments/pricing.ts` (quote math, tested), `lib/payments/booking.ts` (checkout, idempotent confirmation, transfers), `app/api/stripe/webhook/route.ts`, `app/checkout/return`, `app/checkout/mock/[bookingId]`. Tables: `Booking`, `BookingItem`, `BookingTransfer`, `OperatorAccount`.
-
-## Conventions
-
-- `Option.priceCents` and `Option.co2Grams` are **per traveler** and equal the sum of the option's `Segment`s; trip totals multiply by `trip.travelers`.
-- Saving a search result re-fetches it server-side by `externalId` (`provider.getJourney`), so prices posted by the browser are never trusted.
-- Adding schema fields? Restart `npm run dev` after `prisma generate`: the dev server caches the Prisma client across hot reloads.
-- Times are floating local wall-clock times stored as UTC; format with `timeZone: "UTC"` (`lib/format.ts`).
-- `Option.priceAdjustPct` holds manual price bumps (demo "force price rise") so rechecks keep them.
+Next.js (App Router) + TypeScript, SQLite via Prisma, Tailwind. The main entry points are `lib/co2.ts` (emissions), `lib/providers/` (journeys), `lib/pricing.ts` (mock fares), `lib/payments/` (checkout), and the pages in `app/` (`/` search, `/trips`, `/trips/[id]` board).
