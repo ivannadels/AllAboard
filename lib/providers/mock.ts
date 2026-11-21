@@ -1,6 +1,6 @@
 import networkFixture from "@/data/fixtures/network.json";
 import stationsFixture from "@/data/fixtures/stations.json";
-import { co2Grams } from "../co2";
+import { segmentCo2Grams } from "../co2";
 import { greatCircleKm } from "../geo";
 import { hash01, priceAt } from "../pricing";
 import { normalize, slugify } from "../text";
@@ -223,7 +223,7 @@ function route(origin: Station, dest: Station, date: string): Leg[][] {
   return found;
 }
 
-function toDraft(legs: Leg[], date: string, now: Date): OptionDraft {
+function toDraft(legs: Leg[], date: string, now: Date, travelers: number): OptionDraft {
   const segments: SegmentDraft[] = legs.map(({ dep, departAt, arriveAt }) => ({
     mode: dep.mode,
     operator: dep.operator,
@@ -233,7 +233,14 @@ function toDraft(legs: Leg[], date: string, now: Date): OptionDraft {
     arriveAt,
     distanceKm: dep.km,
     priceCents: priceAt({ mode: dep.mode, operator: dep.operator, departAt, distanceKm: dep.km }, now),
-    co2Grams: co2Grams(dep.mode, dep.km, 1),
+    co2Grams: segmentCo2Grams({
+      mode: dep.mode,
+      distanceKm: dep.km,
+      durationMin: dep.min,
+      originCountry: dep.from.countryCode,
+      destCountry: dep.to.countryCode,
+      travelers,
+    }),
     seatsLeft: dep.seats,
   }));
 
@@ -340,7 +347,7 @@ export class MockProvider implements TransportProvider {
     }
 
     const drafts = paths
-      .map((p) => toDraft(p, date, now))
+      .map((p) => toDraft(p, date, now, travelers))
       .filter((d) => d.segments.every((s) => s.seatsLeft == null || s.seatsLeft >= travelers));
 
     return paretoFilter(drafts)
@@ -349,7 +356,7 @@ export class MockProvider implements TransportProvider {
       .sort((a, b) => a.departAt.getTime() - b.departAt.getTime());
   }
 
-  async getJourney(externalId: string, now: Date): Promise<OptionDraft | null> {
+  async getJourney(externalId: string, now: Date, travelers = 1): Promise<OptionDraft | null> {
     const match = /^mock:(\d{4}-\d{2}-\d{2}):(.+)$/.exec(externalId);
     if (!match) return null;
     const [, date, keys] = match;
@@ -367,6 +374,6 @@ export class MockProvider implements TransportProvider {
       if (!dep) return null;
       legs.push(onDate(dep, date));
     }
-    return legs.length ? toDraft(legs, date, now) : null;
+    return legs.length ? toDraft(legs, date, now, travelers) : null;
   }
 }

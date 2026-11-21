@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRightIcon, RouteArrowIcon } from "@/components/aa/icons";
+import { Co2Method } from "@/components/aa/co2-method";
 import { ResultCard } from "@/components/search/result-card";
 import { SearchHero } from "@/components/search/search-hero";
 import { isoDay } from "@/lib/board";
@@ -33,7 +34,7 @@ const POPULAR = [
 ];
 
 const HOW = [
-  { title: "Search greenest first", body: "Every option shows its CO₂ next to the price." },
+  { title: "Search greenest first", body: "Every option shows its CO₂e next to the price." },
   { title: "Pin it to a trip board", body: "Compare plans, add stops, things to do and a checklist." },
   { title: "Book when the price is right", body: "We alert you when a saved fare goes up or a cheaper one appears." },
 ];
@@ -106,7 +107,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/">) {
                   {response.results.length === response.totalUnfiltered
                     ? `${response.totalUnfiltered} options`
                     : `${response.results.length} of ${response.totalUnfiltered} options`}{" "}
-                  · flying ≈ {formatCo2(response.flightCo2Grams)} CO₂ per person
+                  · flying ≈ {formatCo2(response.flightCo2Grams)} CO₂e per person · <Co2Method />
                 </div>
               </div>
               <nav aria-label="Sort results" className="inline-flex overflow-hidden rounded-xl border-2 border-ink bg-white">

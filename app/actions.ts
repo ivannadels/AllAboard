@@ -4,12 +4,14 @@ import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { getAttraction } from "@/lib/attractions";
-import { attractionSlot, cityStops, isoDay } from "@/lib/board";
+import { cityStops, isoDay, stopDays } from "@/lib/board";
+import { formatDay } from "@/lib/format";
 import { normalizeLayout, serializeLayout } from "@/lib/board-layout";
 import {
   ItineraryError,
   addAgendaItem,
   addChecklistItem,
+  checkAgendaSchedule,
   createTrip,
   duplicateVariant,
   findOrCreateLeg,
@@ -40,10 +42,13 @@ const fail = (err: unknown): ActionResult => ({
   error: err instanceof ItineraryError ? err.message : "Something went wrong. Please try again.",
 });
 
-/** Re-fetch the journey server-side; never trust prices posted by the browser. */
-async function loadJourney(externalId: string) {
+/**
+ * Re-fetch the journey server-side; never trust prices posted by the browser. Emissions are
+ * computed for the trip's group (car-share occupancy depends on it).
+ */
+async function loadJourney(externalId: string, travelers: number) {
   const now = await getSimNow();
-  const draft = await getProvider().getJourney(externalId, now);
+  const draft = await getProvider().getJourney(externalId, now, travelers);
   if (!draft) throw new ItineraryError("This journey is no longer available. Try searching again.");
   return { draft, now };
 }
@@ -57,9 +62,9 @@ function checkSeats(seatsLeft: number | null, travelers: number) {
 /** Add a search result to a trip plan: joins the matching leg or creates a new one. */
 export async function addJourneyToPlan(input: { externalId: string; variantId: string }): Promise<ActionResult> {
   try {
-    const { draft, now } = await loadJourney(input.externalId);
     const variant = await prisma.variant.findUnique({ where: { id: input.variantId }, include: { trip: true } });
     if (!variant) throw new ItineraryError("Plan not found");
+    const { draft, now } = await loadJourney(input.externalId, variant.trip.travelers);
     checkSeats(draft.seatsLeft, variant.trip.travelers);
 
     const first = draft.segments[0];
@@ -90,9 +95,9 @@ export async function addJourneyToPlan(input: { externalId: string; variantId: s
 /** Save a search result straight to a known leg (search opened from that leg). */
 export async function addJourneyToLeg(input: { externalId: string; legId: string }): Promise<ActionResult> {
   try {
-    const { draft, now } = await loadJourney(input.externalId);
     const leg = await prisma.leg.findUnique({ where: { id: input.legId }, include: { variant: { include: { trip: true } } } });
     if (!leg) throw new ItineraryError("Leg not found");
+    const { draft, now } = await loadJourney(input.externalId, leg.variant.trip.travelers);
     checkSeats(draft.seatsLeft, leg.variant.trip.travelers);
     const { created } = await saveDraftToLeg(leg.id, draft, now);
     refresh();
@@ -165,31 +170,58 @@ export async function restoreAgendaAction(items: RemovedAgendaItem[]) {
   return run("Restored", () => restoreAgendaItems(items));
 }
 
-/** Add a "Things to do" suggestion to a plan at its suggested slot. Idempotent. */
-export async function addAttractionAction(input: { variantId: string; attractionId: string }) {
-  return run("Added to your week", async () => {
+/**
+ * Put a "Things to do" suggestion on the plan at the day and time the traveller picked (any
+ * day they're in that city). If it's already on the plan, it moves instead of duplicating.
+ */
+export async function addAttractionAction(input: {
+  variantId: string;
+  attractionId: string;
+  date: string;
+  time: string;
+  endTime: string;
+}): Promise<ActionResult> {
+  try {
     const attraction = getAttraction(input.attractionId);
     if (!attraction) throw new ItineraryError("Unknown suggestion");
+    checkAgendaSchedule(input.date, input.time, input.endTime);
+    if (!input.time) throw new ItineraryError("Pick a start time");
     const variant = await prisma.variant.findUnique({
       where: { id: input.variantId },
       include: { trip: true, agenda: true, legs: { include: { origin: true, dest: true, options: { include: { segments: { include: { origin: true, dest: true } } } } } } },
     });
     if (!variant) throw new ItineraryError("Plan not found");
-    if (variant.agenda.some((a) => a.attractionId === attraction.id)) return;
     const stop = cityStops(variant.legs, variant.trip.endDate).find((s) => normalize(s.city) === attraction.city);
     if (!stop) throw new ItineraryError("This plan doesn't stop in that city");
-    const slot = attractionSlot(attraction, stop);
+    if (!stopDays(stop).some((d) => isoDay(d) === input.date)) {
+      throw new ItineraryError(`Pick a day while you're in ${stop.city}`);
+    }
+
+    const when = `${formatDay(new Date(`${input.date}T00:00:00Z`))} ${input.time}`;
+    const existing = variant.agenda.find((a) => a.attractionId === attraction.id);
+    if (existing) {
+      await prisma.agendaItem.update({
+        where: { id: existing.id },
+        data: { date: new Date(`${input.date}T00:00:00.000Z`), time: input.time, endTime: input.endTime || null },
+      });
+      refresh();
+      return { ok: true, message: `${attraction.name} moved to ${when}` };
+    }
     await addAgendaItem({
       variantId: variant.id,
-      date: isoDay(slot.date),
-      time: slot.time,
-      endTime: slot.endTime,
+      date: input.date,
+      time: input.time,
+      endTime: input.endTime || null,
       kind: "ACTIVITY",
       title: attraction.name,
       location: stop.city,
       attractionId: attraction.id,
     });
-  });
+    refresh();
+    return { ok: true, message: `${attraction.name} added for ${when}` };
+  } catch (err) {
+    return fail(err);
+  }
 }
 
 export async function addChecklistAction(tripId: string, text: string) {

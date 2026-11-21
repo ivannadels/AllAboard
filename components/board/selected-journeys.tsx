@@ -213,7 +213,7 @@ function LegCard({ leg, onBook }: { leg: JourneyLegView; onBook: () => void }) {
               : `Price steady for ${leg.strip.weeks || 1} week${leg.strip.weeks === 1 ? "" : "s"}`}
           </span>
           <div className="flex-1" />
-          <span className="text-[11px] font-bold text-green">{formatCo2(c.co2Grams)} CO₂</span>
+          <span className="text-[11px] font-bold text-green">{formatCo2(c.co2Grams)} CO₂e</span>
         </Strip>
       )}
 
@@ -267,7 +267,7 @@ function OptionRow({ option: o, pending, onSelect }: { option: OptionView; pendi
           {o.plusDays > 0 && <sup>+{o.plusDays}</sup>} <span className="font-semibold text-sub">· {o.operator}</span>
         </div>
         <div className="text-xs font-semibold text-sub-2">
-          {o.duration} · {o.changes} · {formatCo2(o.co2Grams)} CO₂
+          {o.duration} · {o.changes} · {formatCo2(o.co2Grams)} CO₂e
           {o.badges.map((b) => (
             <span
               key={b}

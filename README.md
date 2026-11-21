@@ -30,7 +30,7 @@ No env vars needed. Optional: `DATABASE_URL` (default `file:./prisma/dev.db`) an
 - `lib/search.ts`, `lib/search-params.ts`: filters, enrichment (21-day history, 7-day trend, forecast, vs-flying), badges; URL ⇄ query
 - `lib/ranking.ts`: Greenest (default) / Cheapest / Fastest + badges
 - `lib/itinerary.ts`: save a journey to a leg (segments, price history, PRICE_UP alert), match or create legs, select / remove
-- `lib/co2.ts`, `lib/co2-factors.ts`: emissions (placeholder factors, verify against EEA / ADEME)
+- `lib/co2.ts`, `lib/co2-factors.ts`: emissions in CO₂e per traveller, well-to-wheel (ISO 14083 scope; no manufacturing or infrastructure). Trains = electricity per passenger-km (54 Wh high-speed / 80 Wh intercity, by average speed) × the country's grid intensity (Ember 2025; cross-border = average of both). Coach and car from UK DESNZ 2026 factors; car shares split between the driver and your group (at least 3 people). The "flight you didn't take" = great circle + 8% at DESNZ short-haul economy, including non-CO₂ effects. Sources are listed in `lib/co2-factors.ts` and in the app's "How we calculate" dialog.
 - `lib/pricing.ts`: deterministic mock price engine (demand curve, monotonic train fares, journey = sum of segments, forecast)
 - `lib/trip-summary.ts`: totals, CO2, "flight you didn't take"
 - `lib/sim-clock.ts`: the demo's "now". Time logic never uses `Date.now()`.

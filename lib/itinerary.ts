@@ -189,13 +189,18 @@ export interface AgendaInput {
   attractionId?: string | null;
 }
 
+/** Shared checks for an agenda date and optional start/end times. */
+export function checkAgendaSchedule(date: string, time?: string | null, endTime?: string | null) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new ItineraryError("Pick a date");
+  for (const t of [time, endTime]) if (t && !HHMM.test(t)) throw new ItineraryError("Times look like 14:30");
+  if (time && endTime && endTime <= time) throw new ItineraryError("End time must be after the start");
+}
+
 export async function addAgendaItem(input: AgendaInput) {
   const title = input.title.trim();
   if (!title) throw new ItineraryError("Give it a name");
   if (title.length > 120) throw new ItineraryError("That name is too long");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new ItineraryError("Pick a date");
-  for (const t of [input.time, input.endTime]) if (t && !HHMM.test(t)) throw new ItineraryError("Times look like 14:30");
-  if (input.time && input.endTime && input.endTime <= input.time) throw new ItineraryError("End time must be after the start");
+  checkAgendaSchedule(input.date, input.time, input.endTime);
   const variant = await prisma.variant.findUnique({ where: { id: input.variantId } });
   if (!variant) throw new ItineraryError("Plan not found");
   return prisma.agendaItem.create({

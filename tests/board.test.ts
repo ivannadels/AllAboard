@@ -173,3 +173,29 @@ describe("labels", () => {
     expect(tripStatus({ endDate: d("2027-02-01") }, booked, d("2027-03-01"))).toBe("PAST");
   });
 });
+
+describe("scheduling suggestions", () => {
+  it("lists every day of a stay, arrival through departure", async () => {
+    const { stopDays } = await import("@/lib/board");
+    const [ams] = cityStops(legs, d("2027-04-22"));
+    expect(stopDays(ams).map((x) => x.toISOString().slice(0, 10))).toEqual(["2027-04-15", "2027-04-16", "2027-04-17", "2027-04-18"]);
+  });
+
+  it("finds calendar blocks that clash with a chosen time", async () => {
+    const { overlapping } = await import("@/lib/board");
+    const ev = calendarEvents(legs, [agenda({ id: "rijks", date: d("2027-04-15"), kind: "ACTIVITY", title: "Rijksmuseum", time: "15:00", endTime: "17:00" })]);
+    // The Eurostar runs 10:13–13:32 on the 15th.
+    expect(overlapping(ev, "2027-04-15", 13 * 60, 14 * 60).map((e) => e.legId)).toEqual(["l1"]);
+    expect(overlapping(ev, "2027-04-15", 13 * 60 + 32, 15 * 60)).toEqual([]); // touching edges don't clash
+    expect(overlapping(ev, "2027-04-15", 16 * 60, 18 * 60).map((e) => e.agendaId)).toEqual(["rijks"]);
+    expect(overlapping(ev, "2027-04-15", 16 * 60, 18 * 60, "rijks")).toEqual([]); // moving itself
+    expect(overlapping(ev, "2027-04-16", 11 * 60, 12 * 60)).toEqual([]);
+  });
+
+  it("converts times both ways", async () => {
+    const { hhmmToMinutes, minutesToHHMM } = await import("@/lib/board");
+    expect(hhmmToMinutes("10:30")).toBe(630);
+    expect(minutesToHHMM(630 + 90)).toBe("12:00");
+    expect(minutesToHHMM(24 * 60 + 30)).toBe("23:59"); // clamped to the same day
+  });
+});

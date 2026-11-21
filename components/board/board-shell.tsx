@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { duplicatePlanAction, saveBoardLayoutAction } from "@/app/actions";
+import { Co2Method } from "@/components/aa/co2-method";
 import { DragHandleContext } from "@/components/aa/drag-handle";
 import { GridPlusIcon } from "@/components/aa/icons";
 import {
@@ -305,7 +306,7 @@ export function BoardShell({
       </DndContext>
 
       <p className="mt-4 mb-0 text-xs font-semibold text-sub-2">
-        Prices, seats and bike counts are mock data in this prototype. CO₂ figures are estimates.
+        Prices, seats and bike counts are mock data in this prototype. CO₂e figures are estimates (<Co2Method label="how we calculate" />).
       </p>
     </main>
   );

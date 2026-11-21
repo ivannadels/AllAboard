@@ -138,7 +138,7 @@ function TripCard({ trip: t }: { trip: TripOverview }) {
         </div>
         <div className="mt-1 flex flex-wrap gap-2.5">
           <Tile label={`Total · ${t.primaryVariantName ?? "Plan A"}`} value={s ? money(s.totalCents) : "—"} />
-          <Tile label="Travel CO₂" value={s ? formatCo2(s.co2Grams) : "—"} />
+          <Tile label="Travel CO₂e" value={s ? formatCo2(s.co2Grams) : "—"} />
           <div className="flex-[1_1_180px] rounded-2xl bg-mint px-4 py-3.5">
             <div className="text-[11px] font-extrabold tracking-[1.2px] text-sub uppercase">
               Budget{pct != null ? ` · ${pct}% used` : ""}
@@ -158,7 +158,7 @@ function TripCard({ trip: t }: { trip: TripOverview }) {
           {s ? Math.round(s.co2SavedGrams / 1000) : 0}
           <span className="text-[30px] tracking-[-0.5px]">kg</span>
         </div>
-        <div className="text-[13px] font-bold">CO₂ saved on this trip</div>
+        <div className="text-[13px] font-bold">CO₂e saved on this trip</div>
         <div className="min-h-4 flex-1" />
         <Link
           href={`/trips/${t.id}`}

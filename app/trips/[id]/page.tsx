@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { BikeIcon, CalendarIcon, LeafIcon, PeopleIcon, ShareIcon, TrainIcon } from "@/components/aa/icons";
+import { Co2Method } from "@/components/aa/co2-method";
 import { DragHandle } from "@/components/aa/drag-handle";
 import { PreviewTag } from "@/components/aa/widget";
 import { BoardShell } from "@/components/board/board-shell";
@@ -45,7 +46,7 @@ export default async function TripBoardPage({ params, searchParams }: PageProps<
           calendar: <WeekCalendar calendar={view.calendar} variantId={view.variantId} />,
           bookings: <SelectedJourneys journeys={view.journeys} travelers={view.trip.travelers} />,
           co2: <Co2Widget co2={view.co2} travelers={view.trip.travelers} />,
-          attractions: <ThingsToDo stops={view.stops} variantId={view.variantId} />,
+          attractions: <ThingsToDo stops={view.stops} variantId={view.variantId} events={view.calendar.events} />,
           checklist: <Checklist tripId={view.trip.id} items={view.checklist} />,
           bikes: <BikeShareWidget bikes={view.bikes} />,
           budget: <BudgetWidget budget={view.budget} />,
@@ -138,8 +139,9 @@ function Co2Widget({ co2, travelers }: { co2: BoardView["co2"]; travelers: numbe
         ))}
       </div>
       <p className="mt-1.5 mb-0 text-[11px] font-semibold text-sub-2">
-        {co2.savedGrams > 0 ? `${formatCo2(co2.savedGrams)} saved` : "No saving yet"} for {travelers}{" "}
-        {travelers === 1 ? "traveller" : "travellers"}, on the legs you&apos;ve chosen.
+        {co2.savedGrams > 0 ? `${formatCo2(co2.savedGrams)} CO₂e saved` : "No saving yet"} for {travelers}{" "}
+        {travelers === 1 ? "traveller" : "travellers"}, on the legs you&apos;ve chosen. Flying includes contrail effects ·{" "}
+        <Co2Method />
       </p>
     </section>
   );

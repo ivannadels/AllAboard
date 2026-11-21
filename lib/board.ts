@@ -249,6 +249,29 @@ export interface AttractionLike {
   durationMin: number;
 }
 
+/** Every day you're in a city: arrival day through departure day, inclusive. */
+export function stopDays(stop: Pick<CityStop, "arrive" | "leave">): Date[] {
+  return tripDays(stop.arrive, stop.leave);
+}
+
+export const hhmmToMinutes = (hhmm: string) => toMin(hhmm);
+export const minutesToHHMM = (min: number) => toHHMM(Math.max(0, Math.min(min, 24 * 60 - 1)));
+
+/**
+ * Calendar blocks on `day` that overlap [startMin, endMin), e.g. to warn "this clashes with
+ * your Eurostar". `excludeAgendaId` skips the item being moved.
+ */
+export function overlapping(events: CalendarEvent[], day: string, startMin: number, endMin: number, excludeAgendaId?: string): CalendarEvent[] {
+  return events.filter(
+    (e) =>
+      e.day === day &&
+      // Journeys have no agendaId; only skip the one agenda item being moved.
+      (excludeAgendaId == null || e.agendaId !== excludeAgendaId) &&
+      e.startMin < endMin &&
+      startMin < e.endMin,
+  );
+}
+
 /** When to suggest an attraction during a stop: preferred day clamped to the stay. */
 export function attractionSlot(a: AttractionLike, stop: CityStop) {
   const lastDay = Math.max(0, stop.nights - 1);

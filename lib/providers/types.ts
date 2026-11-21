@@ -23,5 +23,5 @@ export interface TransportProvider {
    * Rebuild one journey from its `externalId`, priced at `now`. Used when saving a search
    * result, so the server never trusts prices sent back by the browser.
    */
-  getJourney(externalId: string, now: Date): Promise<OptionDraft | null>;
+  getJourney(externalId: string, now: Date, travelers?: number): Promise<OptionDraft | null>;
 }

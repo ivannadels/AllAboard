@@ -12,6 +12,7 @@ import {
   planLabel,
   priceStrip,
   stayBars,
+  stopDays,
   swapSuggestion,
   tripDays,
   tripStatus,
@@ -28,6 +29,7 @@ import { searchHref } from "./search-params";
 import type { Mode, OptionStatus } from "./types";
 
 const DAY_MS = 86_400_000;
+const weekday = (d: Date) => d.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
 const dayShort = (d: Date) => d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", timeZone: "UTC" });
 const plusDays = (a: Date, b: Date) =>
   Math.round(
@@ -72,14 +74,19 @@ export interface AttractionView {
   blurb: string;
   tag: string;
   swatch: string;
-  slotLabel: string;
-  added: boolean;
+  durationMin: number;
+  /** Where we'd suggest it (pre-fills the add dialog). */
+  suggested: { date: string; time: string; endTime: string; label: string };
+  /** Where it currently is on the plan, if added. */
+  scheduled: { agendaId: string; date: string; time: string | null; endTime: string | null; label: string } | null;
 }
 
 export interface StopView {
   cityKey: string;
   city: string;
   whenLabel: string;
+  /** Days you're in this city (arrival → departure), for the day picker. */
+  days: { iso: string; label: string }[];
   attractions: AttractionView[];
 }
 
@@ -164,7 +171,7 @@ export async function buildBoardView(trip: TripBoard, variantId: string | undefi
   const legs = variant.legs;
   const days = tripDays(trip.startDate, trip.endDate);
   const stops = cityStops(legs, trip.endDate);
-  const added = new Set(variant.agenda.map((a) => a.attractionId).filter(Boolean));
+  const scheduledByAttraction = new Map(variant.agenda.filter((a) => a.attractionId).map((a) => [a.attractionId!, a]));
   const chosenOptions = legs.map((l) => chosen(l.options)).filter((o): o is BoardOption => !!o);
   const modes = [...new Set(chosenOptions.map((o) => o.mode))];
 
@@ -220,16 +227,27 @@ export async function buildBoardView(trip: TripBoard, variantId: string | undefi
       cityKey: stop.cityKey,
       city: stop.city,
       whenLabel: `${dayShort(stop.arrive)} – ${dayShort(stop.leave)} · ${stop.nights} ${stop.nights === 1 ? "night" : "nights"}`,
+      days: stopDays(stop).map((d) => ({ iso: isoDay(d), label: dayShort(d) })),
       attractions: attractionsFor(stop.city).map((a) => {
         const slot = attractionSlot(a, stop);
+        const item = scheduledByAttraction.get(a.id);
         return {
           id: a.id,
           name: a.name,
           blurb: a.blurb,
           tag: a.tag,
           swatch: TAG_SWATCH[a.tag] ?? "#EAF3EC",
-          slotLabel: `${slot.date.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })} ${slot.time}`,
-          added: added.has(a.id),
+          durationMin: a.durationMin,
+          suggested: { date: isoDay(slot.date), time: slot.time, endTime: slot.endTime, label: `${weekday(slot.date)} ${slot.time}` },
+          scheduled: item
+            ? {
+                agendaId: item.id,
+                date: isoDay(item.date),
+                time: item.time,
+                endTime: item.endTime,
+                label: `${weekday(item.date)}${item.time ? ` ${item.time}` : ""}`,
+              }
+            : null,
         };
       }),
     })),

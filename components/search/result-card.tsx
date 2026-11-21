@@ -92,7 +92,7 @@ export function ResultCard({
         <div className="flex flex-col items-start gap-1">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-mint px-3 py-[7px] text-[13px] font-extrabold whitespace-nowrap">
             <LeafIcon size={15} className="text-green" />
-            {formatCo2(r.co2Grams)} CO₂
+            {formatCo2(r.co2Grams)} CO₂e
           </span>
           {savedPct > 0 && <span className="pl-1 text-xs font-bold text-sub">{savedPct}% less than flying</span>}
         </div>
