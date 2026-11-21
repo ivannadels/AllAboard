@@ -1,0 +1,207 @@
+// AllAboard: trip draft board (Step 1, mock data)
+// Prisma 7: the datasource URL lives in prisma.config.ts; the runtime client uses the
+// better-sqlite3 driver adapter (see lib/db.ts).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Mode {
+  TRAIN
+  BUS
+  CARSHARE
+  BIKE
+}
+
+enum OptionStatus {
+  CANDIDATE
+  SELECTED
+  BOOKED
+}
+
+enum AlertType {
+  PRICE_UP
+  PRICE_DOWN
+  LOW_SEATS
+}
+
+enum AgendaKind {
+  STAY
+  ACTIVITY
+  NOTE
+}
+
+model Station {
+  id          String @id
+  name        String
+  city        String
+  countryCode String
+  lat         Float
+  lon         Float
+
+  originLegs     Leg[]     @relation("LegOrigin")
+  destLegs       Leg[]     @relation("LegDest")
+  originSegments Segment[] @relation("SegmentOrigin")
+  destSegments   Segment[] @relation("SegmentDest")
+}
+
+model Trip {
+  id          String   @id @default(cuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  travelers   Int      @default(1)
+  budgetCents Int?
+  createdAt   DateTime @default(now())
+
+  variants Variant[]
+}
+
+model Variant {
+  id        String @id @default(cuid())
+  tripId    String
+  name      String
+  sortOrder Int    @default(0)
+
+  trip   Trip         @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  legs   Leg[]
+  agenda AgendaItem[]
+
+  @@index([tripId])
+}
+
+model Leg {
+  id              String   @id @default(cuid())
+  variantId       String
+  sortOrder       Int      @default(0)
+  originStationId String
+  destStationId   String
+  date            DateTime
+  notes           String?
+
+  variant Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  origin  Station  @relation("LegOrigin", fields: [originStationId], references: [id])
+  dest    Station  @relation("LegDest", fields: [destStationId], references: [id])
+  options Option[]
+
+  @@index([variantId])
+}
+
+// A bookable journey for a leg. May span several segments (changes). priceCents and
+// co2Grams are PER TRAVELER and equal the sum over segments. `mode` is the main mode
+// (the one covering the most distance); `operator` lists all operators.
+model Option {
+  id             String       @id @default(cuid())
+  legId          String
+  externalId     String? // provider's id for this journey (dedupe + re-pricing)
+  mode           Mode
+  operator       String
+  changes        Int          @default(0)
+  departAt       DateTime
+  arriveAt       DateTime
+  durationMin    Int
+  distanceKm     Float
+  priceCents     Int
+  currency       String       @default("EUR")
+  co2Grams       Int
+  bookingUrl     String
+  status         OptionStatus @default(CANDIDATE)
+  source         String       @default("mock")
+  seatsLeft      Int?
+  // Manual price bump in % (demo "Force price rise"). Persisted so price rechecks keep it.
+  priceAdjustPct Float        @default(0)
+
+  leg           Leg             @relation(fields: [legId], references: [id], onDelete: Cascade)
+  segments      Segment[]
+  snapshots     PriceSnapshot[]
+  alerts        Alert[]
+  notifications Notification[]
+
+  @@index([legId])
+}
+
+// One vehicle within an Option (a train, a bus, a car). Prices are per traveler.
+model Segment {
+  id              String   @id @default(cuid())
+  optionId        String
+  sortOrder       Int
+  mode            Mode
+  operator        String
+  originStationId String
+  destStationId   String
+  departAt        DateTime
+  arriveAt        DateTime
+  distanceKm      Float
+  priceCents      Int
+  co2Grams        Int
+
+  option Option  @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  origin Station @relation("SegmentOrigin", fields: [originStationId], references: [id])
+  dest   Station @relation("SegmentDest", fields: [destStationId], references: [id])
+
+  @@index([optionId])
+}
+
+model PriceSnapshot {
+  id         String   @id @default(cuid())
+  optionId   String
+  priceCents Int
+  checkedAt  DateTime
+
+  option Option @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@index([optionId, checkedAt])
+}
+
+model Alert {
+  id           String    @id @default(cuid())
+  optionId     String
+  type         AlertType
+  thresholdPct Float     @default(5)
+  active       Boolean   @default(true)
+
+  option        Option         @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@index([optionId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  alertId   String
+  optionId  String
+  message   String
+  createdAt DateTime @default(now())
+  read      Boolean  @default(false)
+
+  alert  Alert  @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  option Option @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@index([read, createdAt])
+}
+
+model AgendaItem {
+  id        String     @id @default(cuid())
+  variantId String
+  date      DateTime
+  time      String? // "HH:mm", optional
+  kind      AgendaKind
+  title     String
+  location  String?
+  costCents Int?
+
+  variant Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([variantId, date])
+}
+
+// Singleton (id = 1). The demo's notion of "now". Advance it from /demo.
+model SimClock {
+  id  Int      @id @default(1)
+  now DateTime
+}

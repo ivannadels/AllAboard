@@ -1,0 +1,168 @@
+{
+  "_comment": "Mock timetable network. Each link runs both ways between two stations; `dep` lists daily departures (local HH:mm) in both directions unless `depBA` gives the b→a times. `seats` overrides seats left per departure. CARSHARE services are door-to-door and never used inside connections. Prices are NOT here: lib/pricing.ts computes them.",
+  "links": [
+    { "a": "paris-nord", "b": "amsterdam-centraal", "services": [
+      { "mode": "TRAIN", "operator": "Eurostar", "km": 500, "min": 199, "dep": ["07:13", "10:13", "13:13", "16:13"], "seats": { "10:13": 12 } },
+      { "mode": "BUS", "operator": "FlixBus", "km": 505, "min": 450, "dep": ["08:00", "13:00", "22:30"] },
+      { "mode": "CARSHARE", "operator": "BlaBlaCar", "km": 505, "min": 330, "dep": ["09:30"] }
+    ]},
+    { "a": "paris-nord", "b": "bruxelles-midi", "services": [
+      { "mode": "TRAIN", "operator": "Eurostar", "km": 312, "min": 82, "dep": ["06:43", "08:43", "11:43", "14:43", "17:43"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 315, "min": 240, "dep": ["07:00", "12:00", "17:00"] }
+    ]},
+    { "a": "paris-nord", "b": "koeln-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Eurostar", "km": 490, "min": 200, "dep": ["07:55", "10:55", "13:55", "16:55"] }
+    ]},
+    { "a": "paris-nord", "b": "lille-europe", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 225, "min": 62, "dep": ["07:16", "09:16", "12:16", "17:16"] }
+    ]},
+    { "a": "lille-europe", "b": "bruxelles-midi", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 110, "min": 35, "dep": ["08:30", "11:30", "15:30", "18:30"] }
+    ]},
+    { "a": "bruxelles-midi", "b": "amsterdam-centraal", "services": [
+      { "mode": "TRAIN", "operator": "Eurostar", "km": 211, "min": 112, "dep": ["08:52", "11:52", "14:52", "17:52"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 210, "min": 200, "dep": ["09:00", "14:00"] }
+    ]},
+    { "a": "bruxelles-midi", "b": "rotterdam-centraal", "services": [
+      { "mode": "TRAIN", "operator": "Eurostar", "km": 150, "min": 70, "dep": ["08:52", "11:52", "14:52", "17:52"] }
+    ]},
+    { "a": "bruxelles-midi", "b": "antwerpen-centraal", "services": [
+      { "mode": "TRAIN", "operator": "SNCB", "km": 45, "min": 45, "dep": ["07:10", "09:10", "11:10", "13:10", "15:10", "17:10"] }
+    ]},
+    { "a": "bruxelles-midi", "b": "koeln-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 230, "min": 110, "dep": ["07:25", "09:25", "12:25", "15:25", "18:25"] }
+    ]},
+    { "a": "rotterdam-centraal", "b": "amsterdam-centraal", "services": [
+      { "mode": "TRAIN", "operator": "NS", "km": 75, "min": 42, "dep": ["07:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00"] }
+    ]},
+    { "a": "utrecht-centraal", "b": "amsterdam-centraal", "services": [
+      { "mode": "TRAIN", "operator": "NS", "km": 40, "min": 27, "dep": ["07:15", "09:15", "11:15", "13:15", "15:15", "17:15"] }
+    ]},
+    { "a": "amsterdam-centraal", "b": "berlin-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 650, "min": 382, "dep": ["06:00", "08:00", "12:00", "16:00"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 660, "min": 470, "dep": ["07:30", "15:00"] },
+      { "mode": "CARSHARE", "operator": "BlaBlaCar", "km": 655, "min": 420, "dep": ["08:30"] }
+    ]},
+    { "a": "amsterdam-centraal", "b": "koeln-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 265, "min": 160, "dep": ["07:38", "09:38", "11:38", "13:38", "15:38"] }
+    ]},
+    { "a": "koeln-hbf", "b": "berlin-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 575, "min": 260, "dep": ["06:48", "08:48", "10:48", "12:48", "14:48", "16:48"] }
+    ]},
+    { "a": "koeln-hbf", "b": "frankfurt-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 180, "min": 65, "dep": ["07:20", "08:20", "10:20", "12:20", "14:20", "16:20", "18:20"] }
+    ]},
+    { "a": "koeln-hbf", "b": "hamburg-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 430, "min": 240, "dep": ["07:46", "10:46", "13:46", "16:46"] }
+    ]},
+    { "a": "berlin-hbf", "b": "paris-est", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 1050, "min": 486, "dep": ["09:55"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 1055, "min": 840, "dep": ["08:15", "19:00"] },
+      { "mode": "CARSHARE", "operator": "BlaBlaCar", "km": 1055, "min": 630, "dep": ["07:00"] }
+    ]},
+    { "a": "berlin-hbf", "b": "frankfurt-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 550, "min": 240, "dep": ["06:20", "08:20", "10:20", "12:20", "14:20", "16:20"] }
+    ]},
+    { "a": "berlin-hbf", "b": "hamburg-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 290, "min": 110, "dep": ["07:00", "09:00", "11:00", "13:00", "15:00", "17:00"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 290, "min": 200, "dep": ["08:00", "16:00"] }
+    ]},
+    { "a": "berlin-hbf", "b": "muenchen-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 620, "min": 240, "dep": ["06:30", "08:30", "10:30", "12:30", "14:30", "16:30"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 590, "min": 450, "dep": ["07:45", "23:00"] }
+    ]},
+    { "a": "frankfurt-hbf", "b": "paris-est", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 570, "min": 230, "dep": ["07:05", "09:05", "13:05", "17:05"] }
+    ]},
+    { "a": "frankfurt-hbf", "b": "muenchen-hbf", "services": [
+      { "mode": "TRAIN", "operator": "Deutsche Bahn", "km": 390, "min": 200, "dep": ["07:16", "09:16", "11:16", "13:16", "15:16", "17:16"] }
+    ]},
+    { "a": "paris-est", "b": "strasbourg", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 490, "min": 108, "dep": ["07:25", "09:25", "12:25", "16:25"] }
+    ]},
+    { "a": "strasbourg", "b": "basel-sbb", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 140, "min": 80, "dep": ["08:10", "10:10", "14:10", "18:10"] }
+    ]},
+    { "a": "paris-lyon", "b": "lyon-part-dieu", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 430, "min": 116, "dep": ["06:00", "08:00", "10:00", "14:00", "18:00"] },
+      { "mode": "TRAIN", "operator": "Ouigo", "km": 430, "min": 120, "dep": ["10:52", "15:52"], "seats": { "10:52": 14 } },
+      { "mode": "BUS", "operator": "FlixBus", "km": 465, "min": 400, "dep": ["08:30", "14:00", "23:00"] },
+      { "mode": "CARSHARE", "operator": "BlaBlaCar", "km": 465, "min": 270, "dep": ["09:00"] }
+    ]},
+    { "a": "paris-lyon", "b": "marseille-st-charles", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 775, "min": 200, "dep": ["07:07", "10:07", "14:07", "18:07"] }
+    ]},
+    { "a": "paris-lyon", "b": "montpellier-st-roch", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 750, "min": 205, "dep": ["08:04", "12:04", "16:04"] },
+      { "mode": "TRAIN", "operator": "Ouigo", "km": 750, "min": 214, "dep": ["12:34"], "seats": { "12:34": 9 } },
+      { "mode": "BUS", "operator": "BlaBlaCar Bus", "km": 760, "min": 660, "dep": ["07:30", "21:00"] },
+      { "mode": "CARSHARE", "operator": "BlaBlaCar", "km": 750, "min": 480, "dep": ["09:00"] }
+    ]},
+    { "a": "paris-lyon", "b": "barcelona-sants", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 1050, "min": 403, "dep": ["07:07", "14:07"] },
+      { "mode": "TRAIN", "operator": "Renfe", "km": 1050, "min": 412, "dep": ["10:08"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 1035, "min": 930, "dep": ["09:00", "18:00"] },
+      { "mode": "CARSHARE", "operator": "BlaBlaCar", "km": 1035, "min": 600, "dep": ["08:00"] }
+    ]},
+    { "a": "paris-lyon", "b": "geneve-cornavin", "services": [
+      { "mode": "TRAIN", "operator": "TGV Lyria", "km": 545, "min": 190, "dep": ["07:18", "11:18", "15:18", "19:18"] }
+    ]},
+    { "a": "paris-lyon", "b": "zuerich-hb", "services": [
+      { "mode": "TRAIN", "operator": "TGV Lyria", "km": 610, "min": 245, "dep": ["06:22", "10:22", "14:22", "18:22"] }
+    ]},
+    { "a": "paris-lyon", "b": "milano-centrale", "services": [
+      { "mode": "TRAIN", "operator": "Trenitalia", "km": 790, "min": 430, "dep": ["06:27", "10:27", "14:27"] }
+    ]},
+    { "a": "paris-montparnasse", "b": "bordeaux-st-jean", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 580, "min": 124, "dep": ["06:52", "08:52", "12:52", "16:52", "19:52"] },
+      { "mode": "TRAIN", "operator": "Ouigo", "km": 580, "min": 135, "dep": ["10:10"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 585, "min": 480, "dep": ["08:15", "22:45"] }
+    ]},
+    { "a": "bordeaux-st-jean", "b": "madrid-atocha", "services": [
+      { "mode": "BUS", "operator": "ALSA", "km": 690, "min": 600, "dep": ["08:00", "21:00"] }
+    ]},
+    { "a": "lyon-part-dieu", "b": "marseille-st-charles", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 315, "min": 100, "dep": ["08:30", "11:30", "14:30", "17:30"] }
+    ]},
+    { "a": "lyon-part-dieu", "b": "montpellier-st-roch", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 300, "min": 100, "dep": ["09:04", "13:04", "17:04"] }
+    ]},
+    { "a": "lyon-part-dieu", "b": "geneve-cornavin", "services": [
+      { "mode": "TRAIN", "operator": "SNCF", "km": 180, "min": 115, "dep": ["07:40", "12:40", "17:40"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 150, "min": 120, "dep": ["10:00", "18:00"] }
+    ]},
+    { "a": "montpellier-st-roch", "b": "barcelona-sants", "services": [
+      { "mode": "TRAIN", "operator": "Renfe", "km": 340, "min": 172, "dep": ["09:25", "16:25"] },
+      { "mode": "TRAIN", "operator": "SNCF", "km": 340, "min": 180, "dep": ["13:25"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 345, "min": 285, "dep": ["10:00", "15:30"] },
+      { "mode": "CARSHARE", "operator": "BlaBlaCar", "km": 340, "min": 225, "dep": ["11:00"] }
+    ]},
+    { "a": "barcelona-sants", "b": "madrid-atocha", "services": [
+      { "mode": "TRAIN", "operator": "Renfe", "km": 620, "min": 150, "dep": ["07:00", "09:00", "11:00", "13:00", "15:00", "17:00", "19:00"] },
+      { "mode": "TRAIN", "operator": "Ouigo", "km": 620, "min": 165, "dep": ["08:10", "16:10"] }
+    ]},
+    { "a": "barcelona-sants", "b": "girona", "services": [
+      { "mode": "TRAIN", "operator": "Renfe", "km": 100, "min": 38, "dep": ["08:15", "10:15", "12:15", "16:15", "19:15"] }
+    ]},
+    { "a": "geneve-cornavin", "b": "zuerich-hb", "services": [
+      { "mode": "TRAIN", "operator": "SBB", "km": 280, "min": 165, "dep": ["07:42", "09:42", "11:42", "13:42", "15:42", "17:42"] }
+    ]},
+    { "a": "basel-sbb", "b": "zuerich-hb", "services": [
+      { "mode": "TRAIN", "operator": "SBB", "km": 87, "min": 55, "dep": ["07:07", "08:07", "10:07", "12:07", "14:07", "16:07", "18:07"] }
+    ]},
+    { "a": "zuerich-hb", "b": "milano-centrale", "services": [
+      { "mode": "TRAIN", "operator": "SBB", "km": 280, "min": 197, "dep": ["07:33", "09:33", "11:33", "13:33", "15:33", "17:33"] },
+      { "mode": "BUS", "operator": "FlixBus", "km": 290, "min": 240, "dep": ["08:00", "15:00"] }
+    ]},
+    { "a": "zuerich-hb", "b": "muenchen-hbf", "services": [
+      { "mode": "TRAIN", "operator": "SBB", "km": 315, "min": 245, "dep": ["07:33", "11:33", "15:33"] }
+    ]},
+    { "a": "milano-centrale", "b": "roma-termini", "services": [
+      { "mode": "TRAIN", "operator": "Trenitalia", "km": 575, "min": 180, "dep": ["07:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00"] },
+      { "mode": "TRAIN", "operator": "Italo", "km": 575, "min": 185, "dep": ["09:15", "13:15", "17:15"] }
+    ]},
+    { "a": "torino-porta-nuova", "b": "milano-centrale", "services": [
+      { "mode": "TRAIN", "operator": "Trenitalia", "km": 140, "min": 60, "dep": ["07:05", "09:05", "11:05", "13:05", "15:05", "17:05"] }
+    ]}
+  ]
+}
