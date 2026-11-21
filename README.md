@@ -46,6 +46,22 @@ The UI follows the pin-board templates (allaboard-templates): 2px ink outlines, 
 
 Board data: `lib/board.ts` (pure layout/suggestion logic, tested), `lib/board-view.ts` (view models), `data/fixtures/attractions.json`, `data/fixtures/bikeshare.json` behind `lib/bikeshare.ts` (GBFS in Step 2). Collaborators and Share are template previews until accounts arrive (Step 3).
 
+## Payments (Stripe, test mode)
+
+Booking runs through **Stripe Checkout in test mode** when `STRIPE_SECRET_KEY` is set, and through a clearly labelled **mock checkout** when it isn't (so `npm run dev` still works offline). Live keys are refused.
+
+**Model:** AllAboard is the booking agent. One Checkout covers every leg (fare × travellers per line, plus a €1.50 booking fee per leg per traveller). Each booking records what every operator is owed; by default AllAboard **settles with operators outside Stripe**. Optionally, **Stripe Connect** can pay them automatically (*separate charges and transfers*, one transfer per operator, `transfer_group` = booking id). **Stripe Tax** calculates VAT on the booking fee only (`txcd_20030000`); fares pass through as nontaxable (`txcd_00000000`) because the operator's VAT is already in the fare. Have a tax adviser confirm this before going live.
+
+**Setup**
+
+1. Put test keys in `.env.local` (git-ignored): `STRIPE_SECRET_KEY=sk_test_…` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_…`.
+2. `npm run stripe:setup`: configures Stripe Tax (placeholder Brussels head office, prices include VAT, Belgian registration) and creates one test connected account per operator. Safe to re-run.
+   - Connect payouts are **optional**. To enable them, first set up Connect in the sandbox Dashboard so the **platform is responsible for connected accounts' losses** (accounts with no Stripe Dashboard). Without it, fares are settled with operators outside Stripe.
+3. Webhooks (optional; the return page also confirms payments): `stripe listen --print-secret` and put the value in `.env.local` as `STRIPE_WEBHOOK_SECRET`, then run `npm run stripe:listen` next to `npm run dev`. The CLI needs `STRIPE_API_KEY` set (or `stripe login`).
+4. Pay with test card `4242 4242 4242 4242`, any future expiry, any CVC.
+
+Code: `lib/payments/pricing.ts` (quote math, tested), `lib/payments/booking.ts` (checkout, idempotent confirmation, transfers), `app/api/stripe/webhook/route.ts`, `app/checkout/return`, `app/checkout/mock/[bookingId]`. Tables: `Booking`, `BookingItem`, `BookingTransfer`, `OperatorAccount`.
+
 ## Conventions
 
 - `Option.priceCents` and `Option.co2Grams` are **per traveler** and equal the sum of the option's `Segment`s; trip totals multiply by `trip.travelers`.

@@ -26,6 +26,31 @@ const STYLES: Record<string, OperatorStyle> = {
   ALSA: { initials: "AL", bg: "#FDEBDD", fg: "#0E1F17" },
 };
 
+/**
+ * Where each operator's (test) Stripe connected account is registered. Fares for that
+ * operator's segments are transferred there. Unknown operators fall back to Belgium.
+ */
+export const OPERATOR_COUNTRY: Record<string, string> = {
+  Eurostar: "BE",
+  "Deutsche Bahn": "DE",
+  SNCF: "FR",
+  Ouigo: "FR",
+  "TGV Lyria": "FR",
+  Renfe: "ES",
+  Trenitalia: "IT",
+  Italo: "IT",
+  SBB: "CH",
+  SNCB: "BE",
+  NS: "NL",
+  FlixBus: "DE",
+  "BlaBlaCar Bus": "FR",
+  BlaBlaCar: "FR",
+  ALSA: "ES",
+  "Regional rail": "BE",
+};
+
+export const operatorCountry = (operator: string) => OPERATOR_COUNTRY[operator] ?? "BE";
+
 function fallback(name: string): OperatorStyle {
   const words = name.split(/\s+/).filter(Boolean);
   const initials = (words.length > 1 ? words[0][0] + words[1][0] : name.slice(0, 2)).toUpperCase();

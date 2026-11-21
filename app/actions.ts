@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { getAttraction } from "@/lib/attractions";
 import { attractionSlot, cityStops, isoDay } from "@/lib/board";
@@ -24,6 +25,9 @@ import {
   type NewTripInput,
 } from "@/lib/itinerary";
 import { normalize } from "@/lib/text";
+import { PriceChangedError, closeBooking, finalizeBooking, quoteBooking, startCheckout } from "@/lib/payments/booking";
+import type { Quote } from "@/lib/payments/pricing";
+import { paymentsMode } from "@/lib/payments/stripe";
 import { getProvider } from "@/lib/providers";
 import { getSimNow } from "@/lib/sim-clock";
 
@@ -238,6 +242,56 @@ export async function saveBoardLayoutAction(tripId: string, layout: unknown): Pr
     if (!trip) throw new ItineraryError("Trip not found");
     await prisma.trip.update({ where: { id: tripId }, data: { boardLayout: serializeLayout(normalizeLayout(layout)) } });
     return { ok: true, message: "Layout saved", tripId };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Payments
+// ---------------------------------------------------------------------------
+
+export type QuoteResult = { ok: true; quote: Quote; mode: "stripe" | "mock" } | { ok: false; error: string };
+
+/** Price the selected legs right now (server-side) for the checkout dialog. */
+export async function quoteBookingAction(optionIds: string[]): Promise<QuoteResult> {
+  try {
+    return { ok: true, quote: await quoteBooking(optionIds), mode: paymentsMode() };
+  } catch (err) {
+    return { ok: false, error: err instanceof ItineraryError ? err.message : "Couldn't price these legs. Please try again." };
+  }
+}
+
+export type CheckoutResult = { ok: true; url: string } | { ok: false; error: string; quote?: Quote };
+
+/**
+ * Create the booking and get a payment URL (Stripe Checkout, or the mock checkout without a
+ * key). `expectedTotalCents` is what the traveler saw; if fares moved, nothing is charged and
+ * the new quote comes back for review.
+ */
+export async function startCheckoutAction(optionIds: string[], expectedTotalCents: number): Promise<CheckoutResult> {
+  try {
+    const h = await headers();
+    const origin = h.get("origin") ?? `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
+    const { url } = await startCheckout(optionIds, expectedTotalCents, origin);
+    return { ok: true, url };
+  } catch (err) {
+    if (err instanceof PriceChangedError) return { ok: false, error: err.message, quote: err.quote };
+    if (err instanceof ItineraryError) return { ok: false, error: err.message };
+    console.error("checkout failed", err);
+    return { ok: false, error: "Couldn't start the payment. Please try again." };
+  }
+}
+
+/** The mock checkout's Pay / Decline buttons (only when Stripe isn't configured). */
+export async function mockPaymentAction(bookingId: string, outcome: "pay" | "decline"): Promise<ActionResult> {
+  try {
+    if (paymentsMode() !== "mock") throw new ItineraryError("Mock payments are off because Stripe is configured.");
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking || booking.provider !== "mock") throw new ItineraryError("Booking not found");
+    if (outcome === "pay") await finalizeBooking(bookingId, {});
+    else await closeBooking(bookingId, "FAILED");
+    return { ok: true, message: outcome === "pay" ? "Paid" : "Payment declined", tripId: booking.tripId };
   } catch (err) {
     return fail(err);
   }

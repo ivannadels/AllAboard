@@ -63,6 +63,7 @@ model Trip {
 
   variants  Variant[]
   checklist ChecklistItem[]
+  bookings  Booking[]
 }
 
 model Variant {
@@ -224,4 +225,79 @@ model ChecklistItem {
 model SimClock {
   id  Int      @id @default(1)
   now DateTime
+}
+
+// ---------------------------------------------------------------------------
+// Payments (Stripe test mode, or the built-in mock when no key is configured)
+// ---------------------------------------------------------------------------
+
+enum BookingStatus {
+  PENDING // checkout started
+  PAID // paid; options marked BOOKED, transfers attempted
+  FAILED // payment failed or declined (mock)
+  CANCELED // checkout expired or abandoned
+}
+
+// One checkout for one or more legs of a plan. Amounts are in cents, VAT-inclusive.
+model Booking {
+  id                String        @id @default(cuid())
+  tripId            String
+  variantId         String
+  status            BookingStatus @default(PENDING)
+  provider          String // "stripe" | "mock"
+  currency          String        @default("EUR")
+  travelers         Int
+  faresCents        Int // passed through to operators
+  feeCents          Int // AllAboard booking fee (VAT included)
+  taxCents          Int           @default(0) // VAT contained in the fee, from Stripe Tax
+  totalCents        Int
+  checkoutSessionId String?       @unique
+  paymentIntentId   String?
+  createdAt         DateTime      @default(now())
+  paidAt            DateTime?
+
+  trip      Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  items     BookingItem[]
+  transfers BookingTransfer[]
+
+  @@index([tripId])
+}
+
+// One journey (leg option) in a booking: a Checkout line item.
+model BookingItem {
+  id          String @id @default(cuid())
+  bookingId   String
+  optionId    String // not a relation: the option may be removed later
+  description String
+  operator    String
+  fareCents   Int // per traveler, priced at checkout time
+  travelers   Int
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+// What each operator is owed for a booking (sum of its segments' fares × travelers).
+model BookingTransfer {
+  id               String  @id @default(cuid())
+  bookingId        String
+  operator         String
+  amountCents      Int
+  status           String  @default("pending") // pending | sent | skipped | failed
+  stripeTransferId String?
+  note             String?
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+// Operator → Stripe connected account (created by `npm run stripe:setup`).
+model OperatorAccount {
+  operator        String   @id
+  stripeAccountId String
+  country         String
+  transfersStatus String // capability status from Stripe, e.g. active | pending | restricted
+  updatedAt       DateTime @updatedAt
 }

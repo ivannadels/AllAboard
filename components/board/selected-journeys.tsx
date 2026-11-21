@@ -3,22 +3,33 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { bookAction, removeOptionAction, selectOptionAction } from "@/app/actions";
+import { bookAction, quoteBookingAction, removeOptionAction, selectOptionAction, startCheckoutAction } from "@/app/actions";
 import { CheckIcon, ChevronDownIcon, ExternalIcon, ModeGlyph, SearchIcon, TrashIcon, TrendDownIcon } from "@/components/aa/icons";
 import { Widget } from "@/components/aa/widget";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trendPolyline } from "@/lib/board";
 import type { BoardView, JourneyLegView, OptionView } from "@/lib/board-view";
 import { formatCo2, formatMoney } from "@/lib/format";
+import type { Quote } from "@/lib/payments/pricing";
 import { cn } from "@/lib/utils";
 
 const eur = (cents: number) => formatMoney(cents, "EUR", { decimals: cents % 100 !== 0 });
 
 type Bookable = BoardView["journeys"]["bookable"][number];
+type CheckoutState = { items: Bookable[]; quote: Quote; mode: "stripe" | "mock" };
 
 export function SelectedJourneys({ journeys, travelers }: { journeys: BoardView["journeys"]; travelers: number }) {
-  const [booking, setBooking] = useState<Bookable[] | null>(null);
+  const [booking, setBooking] = useState<CheckoutState | null>(null);
+  const [opening, startOpening] = useTransition();
   const title = journeys.allTrains ? "Selected trains" : "Selected journeys";
+
+  // Price the legs on the server first, then open checkout with that quote.
+  const openBooking = (items: Bookable[]) =>
+    startOpening(async () => {
+      const res = await quoteBookingAction(items.map((b) => b.optionId));
+      if (res.ok) setBooking({ items, quote: res.quote, mode: res.mode });
+      else toast.error(res.error);
+    });
 
   return (
     <Widget
@@ -35,9 +46,7 @@ export function SelectedJourneys({ journeys, travelers }: { journeys: BoardView[
       bodyClassName="flex flex-col gap-2 p-2.5"
     >
       {journeys.legs.length === 0 && (
-        <p className="m-0 rounded-xl bg-mint p-3 text-sm font-semibold text-sub">
-          No legs yet. Search a journey and pin it to this trip.
-        </p>
+        <p className="m-0 rounded-xl bg-mint p-3 text-sm font-semibold text-sub">No legs yet. Search a journey and pin it to this trip.</p>
       )}
       {journeys.legs.map((leg) => (
         <LegCard
@@ -45,7 +54,7 @@ export function SelectedJourneys({ journeys, travelers }: { journeys: BoardView[
           leg={leg}
           onBook={() => {
             const b = journeys.bookable.find((x) => x.optionId === leg.chosen?.id);
-            if (b) setBooking([b]);
+            if (b) openBooking([b]);
           }}
         />
       ))}
@@ -64,18 +73,27 @@ export function SelectedJourneys({ journeys, travelers }: { journeys: BoardView[
           <div className="flex-1" />
           <button
             type="button"
-            disabled={journeys.bookable.length === 0}
-            onClick={() => setBooking(journeys.bookable)}
+            disabled={journeys.bookable.length === 0 || opening}
+            onClick={() => openBooking(journeys.bookable)}
             className="btn btn-green min-h-9 px-3.5 text-[13px] shadow-hard-sm"
           >
             {journeys.bookable.length === 0
               ? "All booked"
-              : `Book ${journeys.bookable.length === 1 ? "the last leg" : `all ${journeys.bookable.length} legs`}`}
+              : opening
+                ? "Checking fares…"
+                : `Book ${journeys.bookable.length === 1 ? "the last leg" : `all ${journeys.bookable.length} legs`}`}
           </button>
         </div>
       )}
 
-      <BookingDialog items={booking} travelers={travelers} onClose={() => setBooking(null)} />
+      {booking && (
+        <BookingDialog
+          key={booking.items.map((b) => b.optionId).join(",")}
+          checkout={booking}
+          travelers={travelers}
+          onClose={() => setBooking(null)}
+        />
+      )}
     </Widget>
   );
 }
@@ -236,7 +254,12 @@ const BADGE_LABEL = { greenest: "Greenest", cheapest: "Cheapest", fastest: "Fast
 function OptionRow({ option: o, pending, onSelect }: { option: OptionView; pending: boolean; onSelect: () => void }) {
   const [removing, startRemove] = useTransition();
   return (
-    <li className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 border-b-[1.5px] border-line px-3.5 py-2.5 last:border-b-0", o.status !== "CANDIDATE" && "bg-paper")}>
+    <li
+      className={cn(
+        "flex flex-wrap items-center gap-x-3 gap-y-1 border-b-[1.5px] border-line px-3.5 py-2.5 last:border-b-0",
+        o.status !== "CANDIDATE" && "bg-paper",
+      )}
+    >
       <ModeGlyph mode={o.mode} size={16} className="flex-none" />
       <div className="min-w-0 flex-1">
         <div className="text-[13px] font-extrabold">
@@ -246,7 +269,10 @@ function OptionRow({ option: o, pending, onSelect }: { option: OptionView; pendi
         <div className="text-xs font-semibold text-sub-2">
           {o.duration} · {o.changes} · {formatCo2(o.co2Grams)} CO₂
           {o.badges.map((b) => (
-            <span key={b} className="ml-1.5 rounded-full border border-ink bg-lime px-1.5 text-[10px] font-extrabold tracking-[0.5px] text-ink uppercase">
+            <span
+              key={b}
+              className="ml-1.5 rounded-full border border-ink bg-lime px-1.5 text-[10px] font-extrabold tracking-[0.5px] text-ink uppercase"
+            >
               {BADGE_LABEL[b]}
             </span>
           ))}
@@ -282,79 +308,156 @@ function OptionRow({ option: o, pending, onSelect }: { option: OptionView; pendi
   );
 }
 
-/** "Book all": a checklist of operator links (mock URLs); confirming marks the legs BOOKED. */
-function BookingDialog({ items, travelers, onClose }: { items: Bookable[] | null; travelers: number; onClose: () => void }) {
+/**
+ * Checkout: the server's quote (fares × travellers + €1.50 fee per leg per traveller), then
+ * Stripe Checkout in test mode, or the mock checkout without a key. If fares moved meanwhile,
+ * nothing is charged and the new total is shown. "Booked elsewhere?" keeps the manual route.
+ */
+function BookingDialog({ checkout, travelers, onClose }: { checkout: CheckoutState; travelers: number; onClose: () => void }) {
+  const { items, mode } = checkout;
+  const [quote, setQuote] = useState(checkout.quote);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [paying, startPay] = useTransition();
+  const [elsewhere, setElsewhere] = useState(false);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
-  const list = items ?? [];
+  const list = items;
+
+  const pay = () =>
+    startPay(async () => {
+      const res = await startCheckoutAction(
+        items.map((b) => b.optionId),
+        quote.totalCents,
+      );
+      if (res.ok) return window.location.assign(res.url);
+      if (res.quote) {
+        setQuote(res.quote);
+        setNotice("Fares changed while you were deciding. Here's the updated total. Nothing was charged.");
+      } else toast.error(res.error);
+    });
+
   return (
-    <Dialog
-      open={!!items}
-      onOpenChange={(o) => {
-        if (!o) {
-          onClose();
-          setChecked(new Set());
-        }
-      }}
-    >
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="pin-dialog sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-display-heavy text-2xl uppercase">Book {list.length === 1 ? "this leg" : `${list.length} legs`}</DialogTitle>
+          <DialogTitle className="font-display-heavy text-2xl uppercase">
+            Book {list.length === 1 ? "this leg" : `${list.length} legs`}
+          </DialogTitle>
           <DialogDescription>
-            Book each leg on the operator&apos;s site, then tick it off here. Links are mock in this prototype.
+            {travelers} {travelers === 1 ? "traveller" : "travellers"}. Fares go to each operator; AllAboard adds €1.50 per leg per
+            traveller (VAT included).
           </DialogDescription>
         </DialogHeader>
-        <ul className="m-0 grid list-none gap-2 p-0">
-          {list.map((b) => (
-            <li key={b.optionId} className="flex items-center gap-3 rounded-xl border-2 border-ink p-3">
-              <input
-                type="checkbox"
-                aria-label={`I booked ${b.label}`}
-                checked={checked.has(b.optionId)}
-                onChange={(e) =>
-                  setChecked((s) => {
-                    const n = new Set(s);
-                    if (e.target.checked) n.add(b.optionId);
-                    else n.delete(b.optionId);
-                    return n;
+        {!elsewhere ? (
+          <>
+            {(notice || quote.priceChanged) && (
+              <p className="m-0 rounded-lg border-2 border-ink bg-warn-bg px-3 py-2 text-sm font-bold text-warn">
+                {notice ?? "Some fares changed since you last looked. The total below is today's price."}
+              </p>
+            )}
+            <ul className="m-0 list-none p-0 text-sm">
+              {quote.items.map((i) => (
+                <li key={i.optionId} className="flex items-baseline justify-between gap-3 border-b-[1.5px] border-line py-2">
+                  <span>
+                    <span className="font-bold">{i.title}</span>
+                    <span className="block text-xs font-semibold text-sub">{i.detail}</span>
+                  </span>
+                  <span className="text-right whitespace-nowrap">
+                    <b>{eur(i.amountCents)}</b>
+                    <span className="block text-xs font-semibold text-sub">
+                      {i.travelers} × {eur(i.fareCents)}
+                      {i.changeCents !== 0 && ` (${i.changeCents > 0 ? "+" : "−"}${eur(Math.abs(i.changeCents))})`}
+                    </span>
+                  </span>
+                </li>
+              ))}
+              <li className="flex justify-between gap-3 border-b-[1.5px] border-line py-2">
+                <span className="font-bold">
+                  AllAboard booking fee <span className="text-xs font-semibold text-sub">({quote.feeUnits} × €1.50)</span>
+                </span>
+                <b>{eur(quote.feeCents)}</b>
+              </li>
+            </ul>
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs font-semibold text-sub">VAT on the fee is calculated at checkout</span>
+              <span className="font-display-heavy text-3xl">{eur(quote.totalCents)}</span>
+            </div>
+            <button
+              type="button"
+              disabled={paying}
+              onClick={pay}
+              className="btn btn-green min-h-12 font-display-heavy text-base shadow-hard-sm"
+            >
+              {paying ? "Opening checkout…" : `Pay ${eur(quote.totalCents)}${mode === "stripe" ? " with Stripe" : " (mock)"}`}
+            </button>
+            <p className="m-0 text-center text-xs font-semibold text-sub">
+              {mode === "stripe"
+                ? "Stripe test mode: card 4242 4242 4242 4242, any future date, any CVC."
+                : "No Stripe key configured, so this opens a mock checkout."}{" "}
+              <button type="button" onClick={() => setElsewhere(true)} className="font-bold underline">
+                Booked elsewhere?
+              </button>
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="m-0 text-sm font-semibold text-sub">Bought these tickets somewhere else? Tick them off to mark them booked.</p>
+            <ul className="m-0 grid list-none gap-2 p-0">
+              {list.map((b) => (
+                <li key={b.optionId} className="flex items-center gap-3 rounded-xl border-2 border-ink p-3">
+                  <input
+                    type="checkbox"
+                    aria-label={`I booked ${b.label}`}
+                    checked={checked.has(b.optionId)}
+                    onChange={(e) =>
+                      setChecked((s) => {
+                        const n = new Set(s);
+                        if (e.target.checked) n.add(b.optionId);
+                        else n.delete(b.optionId);
+                        return n;
+                      })
+                    }
+                    className="size-[18px] flex-none accent-green"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-extrabold">{b.label}</div>
+                    <div className="text-xs font-semibold text-sub">{b.operator}</div>
+                  </div>
+                  <a
+                    href={b.bookingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-white min-h-9 rounded-[10px] px-3 text-xs"
+                  >
+                    Operator site <ExternalIcon size={13} />
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <div className="flex justify-between gap-2">
+              <button type="button" onClick={() => setElsewhere(false)} className="btn btn-white">
+                ← Pay here instead
+              </button>
+              <button
+                type="button"
+                disabled={checked.size === 0 || pending}
+                onClick={() =>
+                  startTransition(async () => {
+                    const res = await bookAction([...checked]);
+                    if (res.ok) {
+                      toast.success(`${checked.size} ${checked.size === 1 ? "leg" : "legs"} marked as booked`);
+                      setChecked(new Set());
+                      onClose();
+                    } else toast.error(res.error);
                   })
                 }
-                className="size-[18px] flex-none accent-green"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-extrabold">{b.label}</div>
-                <div className="text-xs font-semibold text-sub">
-                  {b.operator} · {eur(b.priceCents * travelers)} for {travelers}
-                </div>
-              </div>
-              <a href={b.bookingUrl} target="_blank" rel="noopener noreferrer" className="btn btn-white min-h-9 rounded-[10px] px-3 text-xs">
-                Open <ExternalIcon size={13} />
-              </a>
-            </li>
-          ))}
-        </ul>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="btn btn-white">
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={checked.size === 0 || pending}
-            onClick={() =>
-              startTransition(async () => {
-                const res = await bookAction([...checked]);
-                if (res.ok) {
-                  toast.success(`${checked.size} ${checked.size === 1 ? "leg" : "legs"} marked as booked`);
-                  setChecked(new Set());
-                  onClose();
-                } else toast.error(res.error);
-              })
-            }
-            className="btn btn-green shadow-hard-sm"
-          >
-            {pending ? "Saving…" : `Mark ${checked.size || ""} as booked`}
-          </button>
-        </div>
+                className="btn btn-lime shadow-hard-sm"
+              >
+                {pending ? "Saving…" : `Mark ${checked.size || ""} as booked`}
+              </button>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
