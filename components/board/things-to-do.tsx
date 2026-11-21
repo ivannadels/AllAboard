@@ -18,7 +18,6 @@ export function ThingsToDo({ stops, variantId }: { stops: StopView[]; variantId:
     <Widget
       label="Things to do"
       title="Things to do"
-      className="mt-[26px]"
       actions={
         stop && (
           <>
@@ -31,7 +30,7 @@ export function ThingsToDo({ stops, variantId }: { stops: StopView[]; variantId:
                   aria-selected={s.cityKey === stop.cityKey}
                   onClick={() => setCityKey(s.cityKey)}
                   className={cn(
-                    "min-h-10 px-4 font-display-heavy text-[15px]",
+                    "min-h-8 px-3 font-display-heavy text-[13px]",
                     s.cityKey === stop.cityKey ? "bg-ink text-white" : "bg-white text-ink hover:bg-mint",
                   )}
                 >
@@ -47,7 +46,7 @@ export function ThingsToDo({ stops, variantId }: { stops: StopView[]; variantId:
           </>
         )
       }
-      bodyClassName="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4 px-4 py-[18px]"
+      bodyClassName="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5 p-2.5"
     >
       {!stop && <p className="m-0 text-sm font-semibold text-sub">Add a leg to a city to see things to do there.</p>}
       {stop && stop.attractions.length === 0 && (
@@ -55,14 +54,14 @@ export function ThingsToDo({ stops, variantId }: { stops: StopView[]; variantId:
       )}
       {stop?.attractions.map((a) => (
         <article key={a.id} className="flex flex-col overflow-hidden rounded-[14px] border-2 border-ink bg-white">
-          <div className="box-border flex h-[92px] items-end border-b-2 border-ink p-2.5" style={{ background: a.swatch }}>
-            <span className="rounded-md bg-ink px-2 py-[3px] text-[11px] font-extrabold tracking-[0.6px] text-lime uppercase">{a.tag}</span>
+          <div className="box-border flex h-10 items-end border-b-2 border-ink p-1.5" style={{ background: a.swatch }}>
+            <span className="rounded bg-ink px-1.5 py-0.5 text-[10px] font-extrabold tracking-[0.6px] text-lime uppercase">{a.tag}</span>
           </div>
-          <div className="flex flex-1 flex-col gap-[3px] px-3.5 pt-3 pb-3.5">
-            <div className="font-display-heavy text-[19px] leading-tight">{a.name}</div>
-            <div className="mb-2.5 flex-1 text-[13px] font-semibold text-sub-2">{a.blurb}</div>
+          <div className="flex flex-1 flex-col gap-0.5 px-2.5 pt-1.5 pb-2.5">
+            <div className="font-display-heavy text-[15px] leading-tight">{a.name}</div>
+            <div className="mb-1.5 flex-1 text-[11px] font-semibold text-sub-2">{a.blurb}</div>
             {a.added ? (
-              <span className="inline-flex min-h-[38px] items-center text-[13px] font-extrabold text-green">On your week · {a.slotLabel} ✓</span>
+              <span className="inline-flex min-h-7 items-center text-[11px] font-extrabold text-green">On your week · {a.slotLabel} ✓</span>
             ) : (
               <button
                 type="button"
@@ -76,7 +75,7 @@ export function ThingsToDo({ stops, variantId }: { stops: StopView[]; variantId:
                     setAdding(null);
                   });
                 }}
-                className="btn btn-lime min-h-[38px] self-start rounded-[10px] px-3 text-[13px] shadow-hard-xs"
+                className="btn btn-lime min-h-7 self-start rounded-lg px-2 text-[11px] shadow-hard-xs"
               >
                 {pending && adding === a.id ? "Adding…" : `+ Add · ${a.slotLabel}`}
               </button>

@@ -42,7 +42,7 @@ The UI follows the pin-board templates (allaboard-templates): 2px ink outlines, 
 
 - `/`: search. `?from=&to=&date=&travelers=&sort=&modes=&maxChanges=&after=&before=`; add `leg=<id>` to save results straight to a leg, or `trip=<id>` to preselect a trip. (`/search` redirects here.)
 - `/trips`: your trips, with Drafts / Booked / Past tabs and NEW TRIP.
-- `/trips/[id]?plan=<variantId>`: the trip board: week calendar, selected journeys (price strips, swap to a cheaper like-for-like option, options expander, book), CO₂ vs flying, things to do, checklist, bike share, budget. "Customize board" hides widgets (saved in the browser); "+" duplicates the plan.
+- `/trips/[id]?plan=<variantId>`: the trip board: week calendar, selected journeys (price strips, swap to a cheaper like-for-like option, options expander, book), CO₂ vs flying, things to do, checklist, bike share, budget. Widgets are modular: drag any widget by its ⠿ handle (mouse, touch, or keyboard: Space, arrows, Space) within or between the wide and narrow columns. "Customize board" hides widgets and resets the layout. The arrangement is saved on the trip (`Trip.boardLayout`, see `lib/board-layout.ts`). "+" duplicates the plan.
 
 Board data: `lib/board.ts` (pure layout/suggestion logic, tested), `lib/board-view.ts` (view models), `data/fixtures/attractions.json`, `data/fixtures/bikeshare.json` behind `lib/bikeshare.ts` (GBFS in Step 2). Collaborators and Share are template previews until accounts arrive (Step 3).
 

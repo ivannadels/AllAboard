@@ -32,7 +32,7 @@ export function SelectedJourneys({ journeys, travelers }: { journeys: BoardView[
           </span>
         </>
       }
-      bodyClassName="flex flex-col gap-3 p-3.5"
+      bodyClassName="flex flex-col gap-2 p-2.5"
     >
       {journeys.legs.length === 0 && (
         <p className="m-0 rounded-xl bg-mint p-3 text-sm font-semibold text-sub">
@@ -54,7 +54,7 @@ export function SelectedJourneys({ journeys, travelers }: { journeys: BoardView[
         <div className="flex items-center gap-2.5 px-0.5 pt-1">
           <div>
             <div className="text-[11px] font-bold tracking-[0.8px] text-sub-2 uppercase">Total per person</div>
-            <div className="font-display-heavy text-[32px] leading-none">{eur(journeys.totalPerPersonCents)}</div>
+            <div className="font-display-heavy text-[22px] leading-none">{eur(journeys.totalPerPersonCents)}</div>
             {travelers > 1 && (
               <div className="text-xs font-semibold text-sub-2">
                 {eur(journeys.totalPerPersonCents * travelers)} for {travelers}
@@ -66,7 +66,7 @@ export function SelectedJourneys({ journeys, travelers }: { journeys: BoardView[
             type="button"
             disabled={journeys.bookable.length === 0}
             onClick={() => setBooking(journeys.bookable)}
-            className="btn btn-green min-h-12 px-[18px] text-[15px] shadow-hard-sm"
+            className="btn btn-green min-h-9 px-3.5 text-[13px] shadow-hard-sm"
           >
             {journeys.bookable.length === 0
               ? "All booked"
@@ -95,17 +95,17 @@ function LegCard({ leg, onBook }: { leg: JourneyLegView; onBook: () => void }) {
 
   return (
     <article className="overflow-hidden rounded-[14px] border-2 border-ink">
-      <div className="flex items-start gap-2.5 px-3.5 py-3">
+      <div className="flex items-start gap-2 px-2.5 py-2">
         <div className="min-w-0 flex-1">
           <div className="text-[11px] font-bold tracking-[0.8px] text-sub-2 uppercase">
             {leg.dateLabel}
             {c && ` · ${c.operator}`}
           </div>
-          <div className="mt-1 font-display-heavy text-xl">
+          <div className="font-display-heavy text-base leading-tight">
             {leg.originCity} → {leg.destCity}
           </div>
           {c ? (
-            <div className="mt-0.5 flex items-center gap-1.5 text-[13px] font-semibold">
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold">
               <ModeGlyph mode={c.mode} size={14} />
               {c.depart} → {c.arrive}
               {c.plusDays > 0 && <sup>+{c.plusDays}</sup>} · {c.duration} · {c.changes}
@@ -116,7 +116,7 @@ function LegCard({ leg, onBook }: { leg: JourneyLegView; onBook: () => void }) {
         </div>
         {c && (
           <div className="text-right">
-            <div className="font-display-heavy text-2xl">{eur(c.priceCents)}</div>
+            <div className="font-display-heavy text-lg leading-tight">{eur(c.priceCents)}</div>
             {leg.previousPriceCents != null ? (
               <div className="text-[11px] font-semibold text-sub-2 line-through">{eur(leg.previousPriceCents)}</div>
             ) : (
@@ -142,7 +142,7 @@ function LegCard({ leg, onBook }: { leg: JourneyLegView; onBook: () => void }) {
             {leg.strip.stillRising ? " · still rising" : ""}
           </span>
           {c.status === "SELECTED" && (
-            <button type="button" onClick={onBook} className="btn btn-white min-h-[34px] rounded-[9px] px-3 text-[12.5px]">
+            <button type="button" onClick={onBook} className="btn btn-white min-h-7 rounded-lg px-2.5 text-xs">
               Book now
             </button>
           )}
@@ -162,7 +162,7 @@ function LegCard({ leg, onBook }: { leg: JourneyLegView; onBook: () => void }) {
               const { savingCents, depart } = leg.swap!;
               select(leg.swap!.optionId, () => setUndo({ previousId, savingCents, depart }));
             }}
-            className="btn btn-ink min-h-[34px] rounded-[9px] px-3 text-[12.5px] text-lime hover:text-lime"
+            className="btn btn-ink min-h-7 rounded-lg px-2.5 text-xs text-lime hover:text-lime"
           >
             Swap
           </button>
@@ -178,7 +178,7 @@ function LegCard({ leg, onBook }: { leg: JourneyLegView; onBook: () => void }) {
             type="button"
             disabled={pending}
             onClick={() => select(undo.previousId, () => setUndo(null))}
-            className="btn btn-white min-h-[34px] rounded-[9px] px-3 text-[12.5px] font-bold"
+            className="btn btn-white min-h-7 rounded-lg px-2.5 text-xs font-bold"
           >
             Undo
           </button>
@@ -206,12 +206,12 @@ function LegCard({ leg, onBook }: { leg: JourneyLegView; onBook: () => void }) {
             type="button"
             aria-expanded={open}
             onClick={() => setOpen((o) => !o)}
-            className="flex flex-1 items-center gap-2 px-3.5 py-2 text-left text-[12.5px] font-extrabold hover:bg-mint"
+            className="flex flex-1 items-center gap-2 px-2.5 py-1 text-left text-xs font-extrabold hover:bg-mint"
           >
             <ChevronDownIcon size={14} className={cn("transition-transform", open && "rotate-180")} />
             {leg.options.length} {leg.options.length === 1 ? "option" : "options"} saved
           </button>
-          <Link href={leg.findHref} className="inline-flex items-center gap-1 px-3.5 py-2 text-[12.5px] font-extrabold text-green no-underline">
+          <Link href={leg.findHref} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold text-green no-underline">
             <SearchIcon size={13} /> Find options
           </Link>
         </div>
@@ -228,7 +228,7 @@ function LegCard({ leg, onBook }: { leg: JourneyLegView; onBook: () => void }) {
 }
 
 function Strip({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("flex items-center gap-2.5 border-t-2 border-dashed border-dots px-3.5 py-2.5", className)}>{children}</div>;
+  return <div className={cn("flex items-center gap-2 border-t-2 border-dashed border-dots px-2.5 py-1", className)}>{children}</div>;
 }
 
 const BADGE_LABEL = { greenest: "Greenest", cheapest: "Cheapest", fastest: "Fastest" } as const;

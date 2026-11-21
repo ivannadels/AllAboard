@@ -1,5 +1,6 @@
 // Turns a trip board query into plain, serializable view models for the pin-board UI.
 import { attractionsFor, TAG_SWATCH } from "./attractions";
+import { normalizeLayout, type BoardLayout } from "./board-layout";
 import { getBikeShare, type BikeDock } from "./bikeshare";
 import {
   allDayItems,
@@ -83,6 +84,7 @@ export interface StopView {
 }
 
 export interface BoardView {
+  layout: BoardLayout;
   trip: {
     id: string;
     name: string;
@@ -174,6 +176,7 @@ export async function buildBoardView(trip: TripBoard, variantId: string | undefi
   );
 
   return {
+    layout: normalizeLayout(trip.boardLayout),
     trip: {
       id: trip.id,
       name: trip.name,

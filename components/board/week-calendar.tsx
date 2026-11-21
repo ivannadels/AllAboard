@@ -10,7 +10,7 @@ import { CAL_END_HOUR, CAL_START_HOUR, weeks, type CalendarEvent, type StayBar }
 import type { BoardView } from "@/lib/board-view";
 import { cn } from "@/lib/utils";
 
-const HOUR_PX = 40;
+const HOUR_PX = 28;
 const HOURS = Array.from({ length: CAL_END_HOUR - CAL_START_HOUR }, (_, i) => `${String(CAL_START_HOUR + i).padStart(2, "0")}:00`);
 const GRID_HEIGHT = HOURS.length * HOUR_PX;
 const COLS = 7;
@@ -110,7 +110,7 @@ export function WeekCalendar({ calendar, variantId }: { calendar: BoardView["cal
     <Widget
       label="Week calendar"
       title={title}
-      className="min-w-0 flex-[999_1_720px]"
+      className="min-w-0"
       actions={
         <>
           <div className="ml-2 flex flex-wrap gap-3 text-xs font-semibold text-sub-2">
@@ -151,21 +151,21 @@ export function WeekCalendar({ calendar, variantId }: { calendar: BoardView["cal
           <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] border-b-[1.5px] border-line">
             <div />
             {days.map((d, i) => (
-              <div key={d?.iso ?? `pad-${i}`} className={cn("flex items-center gap-1.5 border-l-[1.5px] border-line px-2 pt-2.5 pb-2", !d && "opacity-35")}>
+              <div key={d?.iso ?? `pad-${i}`} className={cn("flex items-center gap-1.5 border-l-[1.5px] border-line px-2 py-1", !d && "opacity-35")}>
                 {d ? (
                   <>
                     <div>
-                      <div className="text-[11px] font-bold tracking-[1px] text-sub-2 uppercase">{d.weekday}</div>
-                      <div className="font-display-heavy text-2xl leading-none">{d.dayNum}</div>
+                      <div className="text-[10px] font-bold tracking-[1px] text-sub-2 uppercase">{d.weekday}</div>
+                      <div className="font-display-heavy text-lg leading-none">{d.dayNum}</div>
                     </div>
                     <div className="flex-1" />
                     <button
                       type="button"
                       aria-label={`Add a plan on ${d.weekday} ${d.dayNum} ${d.month}`}
                       onClick={() => setAddDay(d)}
-                      className="inline-flex size-7 items-center justify-center rounded-lg border-[1.5px] border-ink bg-white text-ink hover:bg-lime"
+                      className="inline-flex size-6 items-center justify-center rounded-md border-[1.5px] border-ink bg-white text-ink hover:bg-lime"
                     >
-                      <PlusIcon size={14} strokeWidth={2.6} />
+                      <PlusIcon size={12} strokeWidth={2.6} />
                     </button>
                   </>
                 ) : (
@@ -186,7 +186,7 @@ export function WeekCalendar({ calendar, variantId }: { calendar: BoardView["cal
                   <div
                     key={stay.id}
                     style={{ gridColumn: `${col + 2} / span ${span}`, gridRow: r + 1 }}
-                    className="mx-1 flex min-w-0 items-center gap-1.5 rounded-md bg-sage px-2 py-1 text-xs font-bold"
+                    className="mx-1 flex min-w-0 items-center gap-1.5 rounded-md bg-sage px-2 py-0.5 text-[11px] font-bold"
                     title={`${stay.title}${stay.location ? ` · ${stay.location}` : ""} · ${stay.nights} nights`}
                   >
                     <BedIcon size={14} className="flex-none" />
@@ -214,7 +214,7 @@ export function WeekCalendar({ calendar, variantId }: { calendar: BoardView["cal
           <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))]">
             <div className="relative" style={{ height: GRID_HEIGHT }}>
               {HOURS.map((h) => (
-                <div key={h} className="h-10 -translate-y-1.5 pr-2 text-right text-[10.5px] font-semibold text-sub-2">
+                <div key={h} style={{ height: HOUR_PX }} className="-translate-y-1.5 pr-2 text-right text-[10px] font-semibold text-sub-2">
                   {h}
                 </div>
               ))}
@@ -225,7 +225,7 @@ export function WeekCalendar({ calendar, variantId }: { calendar: BoardView["cal
                 className={cn("relative border-l-[1.5px] border-line", !d && "bg-paper/60")}
                 style={{
                   height: GRID_HEIGHT,
-                  backgroundImage: "repeating-linear-gradient(to bottom, #E6EFE9 0, #E6EFE9 1px, transparent 1px, transparent 40px)",
+                  backgroundImage: `repeating-linear-gradient(to bottom, #E6EFE9 0, #E6EFE9 1px, transparent 1px, transparent ${HOUR_PX}px)`,
                 }}
               >
                 {d &&
@@ -255,20 +255,20 @@ function Legend({ swatch, label }: { swatch: string; label: string }) {
 function EventBlock({ ev, lane, lanes, onRemove }: { ev: CalendarEvent; lane: number; lanes: number; onRemove: () => void }) {
   const durH = (ev.endMin - ev.startMin) / 60;
   const top = Math.round((ev.startMin / 60 - CAL_START_HOUR) * HOUR_PX) + 2;
-  const height = Math.max(24, Math.round(durH * HOUR_PX) - 4);
+  const height = Math.max(18, Math.round(durH * HOUR_PX) - 3);
   const travel = ev.kind === "transport";
   const width = `calc((100% - 6px) / ${lanes})`;
   return (
     <div
       className={cn(
-        "absolute box-border overflow-hidden rounded-lg border-[1.5px] py-1 pl-[7px] text-[11.5px] leading-tight",
+        "absolute box-border overflow-hidden rounded-md border-[1.5px] py-0.5 pl-1.5 text-[10.5px] leading-tight",
         travel ? "border-green bg-green pr-[7px] text-white" : "border-green bg-white pr-[22px] text-ink",
       )}
       style={{ top, height, width, left: `calc(3px + ${width} * ${lane})` }}
       title={`${ev.title} · ${ev.timeLabel}`}
     >
       <div className="font-bold">{ev.title}</div>
-      {durH >= 0.9 && <div className="mt-0.5 font-medium">{ev.timeLabel}</div>}
+      {height >= 36 && <div className="mt-0.5 font-medium">{ev.timeLabel}</div>}
       {ev.agendaId && (
         <button
           type="button"

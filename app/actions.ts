@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getAttraction } from "@/lib/attractions";
 import { attractionSlot, cityStops, isoDay } from "@/lib/board";
+import { normalizeLayout, serializeLayout } from "@/lib/board-layout";
 import {
   ItineraryError,
   addAgendaItem,
@@ -221,6 +222,22 @@ export async function createTripAction(input: NewTripInput): Promise<ActionResul
     const trip = await createTrip(input);
     refresh();
     return { ok: true, message: "Trip created", tripId: trip.id };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/**
+ * Save the board's widget arrangement. The payload is normalized (unknown widgets dropped,
+ * missing ones restored), so a bad client can't corrupt the layout. No page refresh: the
+ * board already shows the new arrangement.
+ */
+export async function saveBoardLayoutAction(tripId: string, layout: unknown): Promise<ActionResult> {
+  try {
+    const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { id: true } });
+    if (!trip) throw new ItineraryError("Trip not found");
+    await prisma.trip.update({ where: { id: tripId }, data: { boardLayout: serializeLayout(normalizeLayout(layout)) } });
+    return { ok: true, message: "Layout saved", tripId };
   } catch (err) {
     return fail(err);
   }

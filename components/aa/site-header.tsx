@@ -16,10 +16,10 @@ export function SiteHeader() {
   const wide = pathname.startsWith("/trips/");
   return (
     <header className="border-b-2 border-ink bg-white">
-      <div className={cn("mx-auto flex flex-wrap items-center gap-4 px-4 py-3.5 sm:px-8", wide ? "max-w-[1440px]" : "max-w-[1280px]")}>
+      <div className={cn("mx-auto flex flex-wrap items-center gap-4 px-4 py-2.5 sm:px-8", wide ? "max-w-[1440px]" : "max-w-[1280px]")}>
         <Link href="/" className="flex items-center gap-2.5 text-ink no-underline hover:text-ink">
-          <TrainIcon size={30} className="flex-none" />
-          <span className="font-display-heavy text-[22px] tracking-[-0.4px]">AllAboard</span>
+          <TrainIcon size={26} className="flex-none" />
+          <span className="font-display-heavy text-xl tracking-[-0.4px]">AllAboard</span>
         </Link>
         <div className="flex-1" />
         <nav className="flex gap-1 text-sm font-bold">
@@ -31,7 +31,7 @@ export function SiteHeader() {
                 href={n.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex min-h-10 items-center rounded-[10px] px-3.5 no-underline",
+                  "inline-flex min-h-9 items-center rounded-[10px] px-3.5 no-underline",
                   active ? "bg-ink text-lime hover:text-lime" : "text-ink hover:bg-mint hover:text-ink",
                 )}
               >
@@ -42,7 +42,7 @@ export function SiteHeader() {
         </nav>
         <div
           title={`${DEMO_USER.name} (demo user)`}
-          className="flex size-[38px] items-center justify-center rounded-full border-2 border-ink bg-lime text-[13px] font-extrabold"
+          className="flex size-[34px] items-center justify-center rounded-full border-2 border-ink bg-lime text-[13px] font-extrabold"
         >
           {DEMO_USER.initials}
         </div>

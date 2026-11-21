@@ -1,7 +1,7 @@
-import { DragIcon } from "@/components/aa/icons";
+import { DragHandle } from "@/components/aa/drag-handle";
 import { cn } from "@/lib/utils";
 
-/** A pin-board card: 2px ink outline, hard shadow, header row with a (decorative) drag handle. */
+/** A pin-board card: 2px ink outline, hard shadow, header row with the drag handle. */
 export function Widget({
   title,
   label,
@@ -19,11 +19,9 @@ export function Widget({
 }) {
   return (
     <section aria-label={label} className={cn("overflow-hidden rounded-[18px] border-2 border-ink bg-white shadow-hard", className)}>
-      <div className="flex flex-wrap items-center gap-2.5 border-b-2 border-ink py-3 pr-3.5 pl-2.5">
-        <span className="inline-flex size-8 items-center justify-center text-sub-2" title="Widgets can be rearranged in a later version">
-          <DragIcon />
-        </span>
-        <h2 className="m-0 font-display-heavy text-[22px] tracking-[-0.4px] uppercase">{title}</h2>
+      <div className="flex flex-wrap items-center gap-2 border-b-2 border-ink py-1.5 pr-3 pl-1.5">
+        <DragHandle />
+        <h2 className="m-0 font-display-heavy text-base tracking-[-0.2px] uppercase">{title}</h2>
         {actions}
       </div>
       <div className={bodyClassName}>{children}</div>

@@ -58,6 +58,8 @@ model Trip {
   travelers   Int      @default(1)
   budgetCents Int?
   createdAt   DateTime @default(now())
+  // Board widget arrangement as JSON (see lib/board-layout.ts). Null = default layout.
+  boardLayout String?
 
   variants  Variant[]
   checklist ChecklistItem[]

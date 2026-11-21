@@ -3,6 +3,7 @@
 import { useOptimistic, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { addChecklistAction, removeChecklistAction, toggleChecklistAction } from "@/app/actions";
+import { DragHandle } from "@/components/aa/drag-handle";
 import { CloseIcon } from "@/components/aa/icons";
 
 type Item = { id: string; text: string; done: boolean };
@@ -28,21 +29,22 @@ export function Checklist({ tripId, items }: { tripId: string; items: Item[] }) 
   return (
     <section
       aria-label="Checklist"
-      className="relative min-w-0 flex-[1_1_300px] -rotate-[0.8deg] rounded-md border-2 border-ink bg-lime px-[18px] pt-[22px] pb-[18px] shadow-hard"
+      className="relative min-w-0 -rotate-[0.8deg] rounded-md border-2 border-ink bg-lime px-3.5 pt-3 pb-3 shadow-hard"
     >
       <span aria-hidden="true" className="absolute -top-[9px] left-1/2 -ml-[9px] size-[18px] rounded-full border-2 border-ink bg-forest shadow-[0_2px_0_rgba(0,0,0,0.25)]" />
-      <div className="flex items-baseline gap-2">
-        <h2 className="m-0 font-display-heavy text-[22px]">TO DO</h2>
+      <div className="flex items-center gap-2">
+        <DragHandle className="-ml-2 text-ink" />
+        <h2 className="m-0 font-display-heavy text-base">TO DO</h2>
         <span className="text-[13px] font-bold">
           {done} of {optimistic.length} done
         </span>
       </div>
-      <ul className="mt-3 mb-0 flex list-none flex-col gap-0.5 p-0">
+      <ul className="mt-1.5 mb-0 flex list-none flex-col p-0">
         {optimistic.map((c) => (
           <li key={c.id} className="group flex items-center">
             <label
               htmlFor={`chk-${c.id}`}
-              className="flex min-h-9 flex-1 cursor-pointer items-center gap-2.5 text-sm font-semibold"
+              className="flex min-h-7 flex-1 cursor-pointer items-center gap-2 text-[13px] font-semibold"
               style={{ textDecoration: c.done ? "line-through" : "none", opacity: c.done ? 0.6 : 1 }}
             >
               <input
@@ -50,7 +52,7 @@ export function Checklist({ tripId, items }: { tripId: string; items: Item[] }) 
                 type="checkbox"
                 checked={c.done}
                 onChange={(e) => mutate({ id: c.id, done: e.target.checked }, () => toggleChecklistAction(c.id, e.target.checked))}
-                className="size-[18px] flex-none accent-ink"
+                className="size-4 flex-none accent-ink"
               />
               {c.text}
             </label>
@@ -66,7 +68,7 @@ export function Checklist({ tripId, items }: { tripId: string; items: Item[] }) 
         ))}
       </ul>
       <form
-        className="mt-2.5 flex gap-2"
+        className="mt-2 flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           const t = text.trim();
@@ -84,9 +86,9 @@ export function Checklist({ tripId, items }: { tripId: string; items: Item[] }) 
           onChange={(e) => setText(e.target.value)}
           placeholder="Add something…"
           maxLength={200}
-          className="min-h-10 min-w-0 flex-1 rounded-[9px] border-2 border-ink bg-white/70 px-2.5 text-sm font-semibold text-ink"
+          className="min-h-9 min-w-0 flex-1 rounded-[9px] border-2 border-ink bg-white/70 px-2.5 text-sm font-semibold text-ink"
         />
-        <button type="submit" className="btn btn-ink min-h-10 rounded-[9px] px-3.5 text-lime hover:text-lime">
+        <button type="submit" className="btn btn-ink min-h-9 rounded-[9px] px-3.5 text-lime hover:text-lime">
           Add
         </button>
       </form>
